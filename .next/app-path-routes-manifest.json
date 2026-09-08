@@ -1,8 +1,0 @@
-{
-  "/_global-error/page": "/_global-error",
-  "/_not-found/page": "/_not-found",
-  "/api/chart/[userId]/route": "/api/chart/[userId]",
-  "/api/summary/[userId]/route": "/api/summary/[userId]",
-  "/login/page": "/login",
-  "/page": "/"
-}
