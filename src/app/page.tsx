@@ -8,7 +8,7 @@ import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "f
 import type { Transaction, Account, UserSettings } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
@@ -22,6 +22,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -287,28 +289,45 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-2 items-center">
             <ModeToggle />
-            <Button onClick={() => router.push("/tax")} variant="outline" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
-              <Calculator className="w-4 h-4" />
-              <span>คำนวณภาษี</span>
-            </Button>
-            <Button onClick={handleExport} variant="outline" size="icon" title="ส่งออก CSV" className="hidden sm:flex rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
-              <Download className="w-4 h-4" />
-            </Button>
-            <Button onClick={() => setIsBudgetModalOpen(true)} variant="outline" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
-              <Target className="w-4 h-4" />
-              <span>ตั้งงบประมาณ</span>
-            </Button>
+            
             <Button onClick={() => { setAccountToEdit(undefined); setIsAccountModalOpen(true); }} variant="secondary" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
               <CreditCard className="w-4 h-4" />
               <span>เพิ่มบัญชี</span>
             </Button>
-            <Button onClick={() => { setTransactionToEdit(undefined); setIsModalOpen(true); }} className="hidden md:flex gap-2 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            
+            <Button onClick={() => { setTransactionToEdit(undefined); setIsModalOpen(true); }} className="hidden sm:flex gap-2 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
               <PlusCircle className="w-4 h-4" />
               <span>เพิ่มรายการ</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={logout} title="ออกจากระบบ" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors">
-              <LogOut className="w-4 h-4" />
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="rounded-full shadow-sm hover:shadow transition-all ml-1">
+                  <Menu className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                <DropdownMenuLabel className="font-semibold text-muted-foreground">เมนูเพิ่มเติม</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/tax")} className="rounded-lg cursor-pointer py-2.5">
+                  <Calculator className="w-4 h-4 mr-2" />
+                  <span>คำนวณภาษี</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsBudgetModalOpen(true)} className="rounded-lg cursor-pointer py-2.5">
+                  <Target className="w-4 h-4 mr-2" />
+                  <span>ตั้งงบประมาณ</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport} className="rounded-lg cursor-pointer py-2.5">
+                  <Download className="w-4 h-4 mr-2" />
+                  <span>ส่งออกข้อมูล (CSV)</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive rounded-lg cursor-pointer py-2.5">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  <span>ออกจากระบบ</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
