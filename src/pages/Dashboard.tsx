@@ -5,7 +5,7 @@ import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "f
 import type { Transaction, Account } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -98,13 +98,11 @@ export const Dashboard: React.FC = () => {
     .filter((t) => t.type === "expense")
     .reduce((acc, t) => acc + t.amount, 0);
 
-  // Overall Balance includes all time transactions + all initial account balances
   const allTimeIncome = transactions.filter(t => t.type === "income").reduce((acc, t) => acc + t.amount, 0);
   const allTimeExpense = transactions.filter(t => t.type === "expense").reduce((acc, t) => acc + t.amount, 0);
   const totalInitialBalances = accounts.reduce((acc, a) => acc + a.initialBalance, 0);
   const overallBalance = totalInitialBalances + allTimeIncome - allTimeExpense;
 
-  // Prepare chart data (Expense by category in selected month)
   const expensesByCategory = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc, t) => {
@@ -117,7 +115,6 @@ export const Dashboard: React.FC = () => {
     value: expensesByCategory[key]
   })).sort((a, b) => b.value - a.value);
 
-  // Prepare Daily Report data
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
     return { day: i + 1, income: 0, expense: 0 };
@@ -229,70 +226,85 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 transition-colors">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">ภาพรวม</h1>
-            <p className="text-muted-foreground text-sm">ยินดีต้อนรับกลับ, {user?.displayName || "ผู้ใช้"}</p>
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-4 md:p-8 transition-colors font-sans">
+      <div className="max-w-5xl mx-auto space-y-8">
+        
+        {/* Header - Mobile friendly with flex-wrap and gaps */}
+        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">ภาพรวม</h1>
+            <p className="text-muted-foreground text-sm font-medium">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
           </div>
-          <div className="flex gap-2 items-center flex-wrap">
+          <div className="flex gap-2 items-center">
             <ModeToggle />
-            <Button onClick={handleExport} variant="outline" size="icon" title="ส่งออก CSV" className="hidden sm:flex">
+            <Button onClick={handleExport} variant="outline" size="icon" title="ส่งออก CSV" className="hidden sm:flex rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
               <Download className="w-4 h-4" />
             </Button>
-            <Button onClick={() => { setAccountToEdit(undefined); setIsAccountModalOpen(true); }} variant="secondary" className="gap-2">
+            <Button onClick={() => { setAccountToEdit(undefined); setIsAccountModalOpen(true); }} variant="secondary" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
               <CreditCard className="w-4 h-4" />
-              <span className="hidden sm:inline">เพิ่มบัญชี</span>
+              <span>เพิ่มบัญชี</span>
             </Button>
-            <Button onClick={() => { setTransactionToEdit(undefined); setIsModalOpen(true); }} className="gap-2">
+            <Button onClick={() => { setTransactionToEdit(undefined); setIsModalOpen(true); }} className="hidden md:flex gap-2 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
               <PlusCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">เพิ่มรายการ</span>
+              <span>เพิ่มรายการ</span>
             </Button>
-            <Button variant="outline" size="icon" onClick={logout} title="ออกจากระบบ">
+            <Button variant="ghost" size="icon" onClick={logout} title="ออกจากระบบ" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors">
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </header>
 
+        {/* Floating Action Button (FAB) for Mobile */}
+        <button
+          onClick={() => { setTransactionToEdit(undefined); setIsModalOpen(true); }}
+          className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+
         {/* My Accounts */}
-        <div>
-          <h2 className="text-lg font-semibold mb-3">บัญชีของฉัน</h2>
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold tracking-tight">บัญชีของฉัน</h2>
+            <Button variant="ghost" size="sm" onClick={() => setIsAccountModalOpen(true)} className="sm:hidden text-primary h-8 px-2">
+              <Plus className="w-4 h-4 mr-1" /> เพิ่มบัญชี
+            </Button>
+          </div>
+          
           {loadingAccs ? (
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {[1, 2].map(i => <Skeleton key={i} className="h-24 w-64 shrink-0 rounded-xl" />)}
+            <div className="flex gap-4 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-64 shrink-0 rounded-2xl" />)}
             </div>
           ) : accounts.length > 0 ? (
-            <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
+            <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-1 -mx-1">
               {accounts.map(acc => {
                 const bal = getAccountBalance(acc.id);
                 return (
-                  <Card key={acc.id} className="w-64 shrink-0 snap-start shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: acc.color }} />
-                    <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
-                      <CardTitle className="text-sm font-medium truncate flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: acc.color }} />
+                  <Card key={acc.id} className="w-64 shrink-0 snap-start shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group border-muted/50 rounded-2xl cursor-pointer" onClick={() => handleEditAccount(acc)}>
+                    <div className="absolute top-0 left-0 w-1.5 h-full transition-all group-hover:w-2" style={{ backgroundColor: acc.color }} />
+                    <CardHeader className="py-4 px-5 flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-semibold truncate flex items-center gap-2 text-muted-foreground">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
                         {acc.name}
                       </CardTitle>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                            <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditAccount(acc)}>
+                        <DropdownMenuContent align="end" className="rounded-xl">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditAccount(acc); }} className="rounded-lg cursor-pointer">
                             <Edit2 className="h-4 w-4 mr-2" /> แก้ไข
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteAccount(acc.id)} className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteAccount(acc.id); }} className="text-destructive focus:text-destructive rounded-lg cursor-pointer">
                             <Trash2 className="h-4 w-4 mr-2" /> ลบ
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className={`text-xl font-bold ${bal >= 0 ? '' : 'text-destructive'}`}>
+                    <CardContent className="px-5 pb-5">
+                      <div className={`text-2xl font-bold tracking-tight ${bal >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                         ฿{bal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </CardContent>
@@ -301,102 +313,118 @@ export const Dashboard: React.FC = () => {
               })}
             </div>
           ) : (
-            <Card className="border-dashed shadow-none bg-transparent">
-              <CardContent className="flex flex-col items-center justify-center p-6 text-muted-foreground">
-                <CreditCard className="w-8 h-8 mb-2 opacity-50" />
-                <p>ยังไม่มีบัญชี</p>
-                <Button variant="link" onClick={() => setIsAccountModalOpen(true)}>สร้างบัญชีเพื่อเริ่มต้นใช้งาน</Button>
+            <Card className="border-dashed shadow-none bg-transparent rounded-2xl">
+              <CardContent className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <CreditCard className="w-6 h-6 opacity-50" />
+                </div>
+                <p className="font-medium">ยังไม่มีบัญชี</p>
+                <Button variant="link" onClick={() => setIsAccountModalOpen(true)} className="mt-1">สร้างบัญชีแรกของคุณ</Button>
               </CardContent>
             </Card>
           )}
-        </div>
+        </section>
 
-        {/* Filter Controls */}
-        <div className="flex gap-4 items-center pt-2">
-          <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="เดือน" />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((m, i) => (
-                <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Filter Controls & Summary Cards */}
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between bg-card p-2 rounded-2xl border shadow-sm">
+            <div className="flex gap-2 items-center flex-1">
+              <div className="bg-primary/10 p-2 rounded-full text-primary">
+                <Filter className="w-4 h-4" />
+              </div>
+              <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
+                <SelectTrigger className="w-[130px] border-none shadow-none bg-transparent hover:bg-muted/50 rounded-full font-medium">
+                  <SelectValue placeholder="เดือน" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {MONTHS.map((m, i) => (
+                    <SelectItem key={i} value={i.toString()} className="rounded-lg">{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
+                <SelectTrigger className="w-[90px] border-none shadow-none bg-transparent hover:bg-muted/50 rounded-full font-medium">
+                  <SelectValue placeholder="ปี" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {YEARS.map(y => (
+                    <SelectItem key={y} value={y.toString()} className="rounded-lg">{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button onClick={handleExport} variant="ghost" size="sm" className="sm:hidden w-full flex justify-center gap-2 rounded-full text-muted-foreground hover:text-foreground">
+              <Download className="w-4 h-4" /> ส่งออกข้อมูล
+            </Button>
+          </div>
 
-          <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="ปี" />
-            </SelectTrigger>
-            <SelectContent>
-              {YEARS.map(y => (
-                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex-1"></div>
-          <Button onClick={handleExport} variant="outline" size="sm" className="sm:hidden flex gap-2">
-            <Download className="w-4 h-4" /> ส่งออก
-          </Button>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ยอดเงินคงเหลือรวม</CardTitle>
-              <Wallet className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {loadingTxs || loadingAccs ? (
-                <Skeleton className="h-8 w-1/2" />
-              ) : (
-                <div className={`text-2xl font-bold ${overallBalance >= 0 ? '' : 'text-destructive'}`}>
-                  ฿{overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-primary">ยอดเงินคงเหลือรวม</CardTitle>
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Wallet className="w-4 h-4 text-primary" />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">รายรับ (เดือนที่เลือก)</CardTitle>
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              {loadingTxs ? (
-                <Skeleton className="h-8 w-1/2" />
-              ) : (
-                <div className="text-2xl font-bold text-emerald-500">
-                  +฿{totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">รายจ่าย (เดือนที่เลือก)</CardTitle>
-              <TrendingDown className="w-4 h-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              {loadingTxs ? (
-                <Skeleton className="h-8 w-1/2" />
-              ) : (
-                <div className="text-2xl font-bold text-destructive">
-                  -฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardHeader>
+              <CardContent>
+                {loadingTxs || loadingAccs ? (
+                  <Skeleton className="h-8 w-1/2" />
+                ) : (
+                  <div className={`text-3xl font-bold tracking-tight ${overallBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                    ฿{overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-emerald-600 dark:text-emerald-500">รายรับ (เดือนนี้)</CardTitle>
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingTxs ? (
+                  <Skeleton className="h-8 w-1/2" />
+                ) : (
+                  <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">
+                    +฿{totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent border-destructive/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-destructive">รายจ่าย (เดือนนี้)</CardTitle>
+                <div className="w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <TrendingDown className="w-4 h-4 text-destructive" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingTxs ? (
+                  <Skeleton className="h-8 w-1/2" />
+                ) : (
+                  <div className="text-3xl font-bold tracking-tight text-destructive">
+                    -฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        {/* Charts Section */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Pie Chart */}
-          <Card>
+          <Card className="rounded-2xl shadow-sm border-muted/50">
             <CardHeader>
-              <CardTitle>รายจ่ายแบ่งตามหมวดหมู่</CardTitle>
+              <CardTitle className="text-base font-semibold">รายจ่ายแบ่งตามหมวดหมู่</CardTitle>
             </CardHeader>
-            <CardContent className="flex justify-center">
+            <CardContent className="flex justify-center pb-6">
               {loadingTxs ? (
                 <Skeleton className="h-[250px] w-[250px] rounded-full" />
               ) : pieChartData.length > 0 ? (
@@ -407,22 +435,26 @@ export const Dashboard: React.FC = () => {
                         data={pieChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
+                        innerRadius={65}
+                        outerRadius={85}
                         paddingAngle={5}
                         dataKey="value"
+                        stroke="none"
                       >
                         {pieChartData.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: any) => `฿${Number(value).toFixed(2)}`} />
-                      <Legend />
+                      <Tooltip 
+                        formatter={(value: any) => `฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm font-medium">
                   ไม่มีรายจ่ายในเดือนนี้
                 </div>
               )}
@@ -430,106 +462,126 @@ export const Dashboard: React.FC = () => {
           </Card>
 
           {/* Bar Chart */}
-          <Card>
+          <Card className="rounded-2xl shadow-sm border-muted/50">
             <CardHeader>
-              <CardTitle>รายงานรายวัน</CardTitle>
+              <CardTitle className="text-base font-semibold">รายงานรายวัน</CardTitle>
             </CardHeader>
-            <CardContent className="flex justify-center">
+            <CardContent className="flex justify-center pb-6">
               {loadingTxs ? (
                 <Skeleton className="h-[250px] w-full" />
               ) : filteredTransactions.length > 0 ? (
                 <div className="h-[250px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `฿${val}`} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(val) => `฿${val}`} />
                       <Tooltip 
-                        formatter={(value: any, name: any) => [`฿${Number(value).toFixed(2)}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
+                        formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
                         labelFormatter={(label) => `วันที่ ${label} ${MONTHS[selectedMonth]}`}
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 500 }}
+                        cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
                       />
-                      <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} />
-                      <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                      <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                      <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={24} />
+                      <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={24} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm font-medium">
                   ไม่มีข้อมูลในเดือนนี้
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
+        </section>
 
         {/* Transactions List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>รายการธุรกรรม</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingTxs ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : filteredTransactions.length > 0 ? (
-              <div className="space-y-4">
-                {filteredTransactions.map((tx) => {
-                  const acc = accounts.find(a => a.id === tx.accountId);
-                  return (
-                    <div key={tx.id} className="flex justify-between items-center p-3 rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                      {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: acc.color }} />}
-                      <div className="flex flex-col flex-1 pl-2">
-                        <span className="font-medium flex items-center gap-2">
-                          {tx.category}
-                          {acc && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-muted text-muted-foreground">
-                              {acc.name}
+        <section>
+          <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden">
+            <CardHeader className="bg-muted/30 border-b border-muted/50 py-4">
+              <CardTitle className="text-base font-semibold">รายการธุรกรรมล่าสุด</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingTxs ? (
+                <div className="p-6 space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                  ))}
+                </div>
+              ) : filteredTransactions.length > 0 ? (
+                <div className="divide-y divide-muted/50">
+                  {filteredTransactions.map((tx) => {
+                    const acc = accounts.find(a => a.id === tx.accountId);
+                    const isIncome = tx.type === 'income';
+                    return (
+                      <div key={tx.id} className="group flex justify-between items-center p-4 sm:px-6 hover:bg-muted/30 transition-colors duration-200 relative">
+                        {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: acc.color }} />}
+                        
+                        <div className="flex items-center gap-4 flex-1 pl-2">
+                          {/* Category Icon / Initial */}
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${isIncome ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
+                            {tx.category.substring(0, 1)}
+                          </div>
+                          
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-foreground tracking-tight">
+                              {tx.category}
                             </span>
-                          )}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(tx.date), "MMM d, yyyy")} {tx.note && `• ${tx.note}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className={`font-semibold ${tx.type === 'income' ? 'text-emerald-500' : ''}`}>
-                          {tx.type === 'income' ? '+' : '-'}฿{tx.amount.toFixed(2)}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {acc && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-background border text-muted-foreground font-medium">
+                                  {acc.name}
+                                </span>
+                              )}
+                              <span className="text-xs text-muted-foreground font-medium">
+                                {format(new Date(tx.date), "d MMM yyyy")} {tx.note && `• ${tx.note}`}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditTx(tx)}>
-                              <Edit2 className="h-4 w-4 mr-2" /> แก้ไข
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteTx(tx.id)} className="text-destructive focus:text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" /> ลบ
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+
+                        <div className="flex items-center gap-2 sm:gap-4">
+                          <div className={`font-bold tracking-tight text-right ${isIncome ? 'text-emerald-600 dark:text-emerald-500' : 'text-foreground'}`}>
+                            {isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})}
+                          </div>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl">
+                              <DropdownMenuItem onClick={() => handleEditTx(tx)} className="rounded-lg cursor-pointer">
+                                <Edit2 className="h-4 w-4 mr-2" /> แก้ไข
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteTx(tx.id)} className="text-destructive focus:text-destructive rounded-lg cursor-pointer">
+                                <Trash2 className="h-4 w-4 mr-2" /> ลบ
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
-                <p className="mb-4">ไม่พบรายการธุรกรรมในเดือนนี้</p>
-                {accounts.length === 0 && (
-                  <p className="text-sm text-destructive">กรุณาสร้างบัญชีก่อนเพิ่มรายการธุรกรรม</p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground flex flex-col items-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <TrendingDown className="w-8 h-8 opacity-40" />
+                  </div>
+                  <p className="mb-2 font-medium text-foreground">ไม่พบรายการธุรกรรมในเดือนนี้</p>
+                  <p className="text-sm">เพิ่มรายการแรกของคุณเพื่อเริ่มต้นติดตามการใช้จ่าย</p>
+                  {accounts.length === 0 && (
+                    <p className="text-sm text-destructive mt-2">กรุณาสร้างบัญชีก่อนเพิ่มรายการธุรกรรม</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
       </div>
 
       <TransactionModal 
