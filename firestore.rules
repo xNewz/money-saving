@@ -1,0 +1,24 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // กฎสำหรับคอลเล็กชัน transactions
+    match /transactions/{transactionId} {
+      allow read, update, delete: if request.auth != null 
+                                  && request.auth.uid == 'aWBhtKFUOiMG2hnm4AgFhkA1BWI3'
+                                  && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null 
+                    && request.auth.uid == 'aWBhtKFUOiMG2hnm4AgFhkA1BWI3'
+                    && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /accounts/{accountId} {
+      allow read, update, delete: if request.auth != null 
+                                  && request.auth.uid == 'aWBhtKFUOiMG2hnm4AgFhkA1BWI3'
+                                  && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null 
+                    && request.auth.uid == 'aWBhtKFUOiMG2hnm4AgFhkA1BWI3'
+                    && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}
