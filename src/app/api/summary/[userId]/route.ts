@@ -35,12 +35,18 @@ export async function GET(
     
     const overallBalance = totalInitial + allTimeIncome - allTimeExpense;
 
+    const budget = settings?.monthlyBudget || 0;
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dailyBudgetLimit = budget > 0 ? Math.round(budget / daysInMonth) : 0;
+
     return NextResponse.json({
       success: true,
       data: {
         userId,
         overallBalance,
-        budget: settings?.monthlyBudget || 0,
+        budget,
+        dailyBudgetLimit,
         accountsCount: accounts.length,
         transactionsCount: transactions.length,
         recentTransactions: transactions
