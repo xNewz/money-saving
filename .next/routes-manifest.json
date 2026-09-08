@@ -1,7 +1,7 @@
 {
   "version": 3,
   "pages404": true,
-  "appType": "hybrid",
+  "appType": "app",
   "caseSensitive": false,
   "basePath": "",
   "redirects": [
