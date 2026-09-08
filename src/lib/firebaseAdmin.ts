@@ -5,7 +5,7 @@ export function getAdminDb() {
   if (!getApps().length) {
     try {
       const serviceAccount = {
-        projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-project",
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-project",
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "demo@demo.com",
         privateKey: (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, '\n'),
       };

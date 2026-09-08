@@ -1,11 +1,20 @@
-# React + TypeScript + Vite
+# Money Saving App
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A personal finance tracking application built with **Next.js**, React, and Firebase.
 
-Currently, two official plugins are available:
+## Features
+- Server-Side Rendering & API Routes via Next.js
+- Real-time data sync with Firebase Firestore
+- Secure Authentication with Firebase Auth
+- Beautiful UI with Tailwind CSS and shadcn/ui
+- Built-in APIs for external integrations
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Getting Started
+
+1. Clone the repository
+2. Run `npm install`
+3. Configure your `.env.local` file with Firebase credentials (using `NEXT_PUBLIC_` prefix)
+4. Run `npm run dev` to start the development server
 
 ## React Compiler
 

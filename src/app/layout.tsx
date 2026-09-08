@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <ThemeProvider defaultTheme="system" storageKey="money-saving-theme">
           <AuthProvider>
             {children}
             <Toaster />
