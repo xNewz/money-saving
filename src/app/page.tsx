@@ -8,7 +8,7 @@ import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "f
 import type { Transaction, Account, UserSettings } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
@@ -287,6 +287,10 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-2 items-center">
             <ModeToggle />
+            <Button onClick={() => router.push("/tax")} variant="outline" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
+              <Calculator className="w-4 h-4" />
+              <span>คำนวณภาษี</span>
+            </Button>
             <Button onClick={handleExport} variant="outline" size="icon" title="ส่งออก CSV" className="hidden sm:flex rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
               <Download className="w-4 h-4" />
             </Button>
