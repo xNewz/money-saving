@@ -7,11 +7,17 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    const url = new URL(request.url);
+    const apiKey = url.searchParams.get('apiKey');
+    
+    if (process.env.API_SECRET_KEY && apiKey !== process.env.API_SECRET_KEY) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Invalid API Key' }, { status: 401 });
+    }
+
     const { userId } = await params;
     const adminDb = getAdminDb();
     
     // Parse query params for month/year if provided
-    const url = new URL(request.url);
     const now = new Date();
     const month = parseInt(url.searchParams.get('month') || now.getMonth().toString());
     const year = parseInt(url.searchParams.get('year') || now.getFullYear().toString());
