@@ -273,6 +273,18 @@ export default function Dashboard() {
   const percentUsed = budget > 0 ? (totalExpense / budget) * 100 : 0;
   const isOverBudget = percentUsed >= 100;
 
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear;
+  
+  const spentToday = isCurrentMonth 
+    ? filteredTransactions
+        .filter(t => t.type === 'expense' && new Date(t.date).getDate() === today.getDate())
+        .reduce((acc, t) => acc + t.amount, 0)
+    : 0;
+
+  const averageBudgetPerDay = budget / daysInMonth;
+  const remainingDailyBudget = averageBudgetPerDay - spentToday;
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -504,12 +516,28 @@ export default function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex justify-between items-end mb-2">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      งบประมาณรายเดือน
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                        เฉลี่ยไม่เกิน ฿{(budget / daysInMonth).toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
-                      </span>
-                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <p className="text-sm font-medium text-muted-foreground">งบประมาณรายเดือน</p>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                          เฉลี่ยไม่เกิน ฿{averageBudgetPerDay.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
+                        </span>
+                      </div>
+                      {budget > 0 && isCurrentMonth && (
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold ${
+                            remainingDailyBudget >= 0 
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                              : 'bg-destructive/10 text-destructive'
+                          }`}>
+                            {remainingDailyBudget >= 0 
+                              ? `วันนี้ใช้งบได้อีก ฿${remainingDailyBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
+                              : `วันนี้ใช้เกินงบเฉลี่ยไป ฿${Math.abs(remainingDailyBudget).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-baseline gap-2">
                       <h3 className="text-2xl font-bold tracking-tight">฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0 })}</h3>
                       <span className="text-sm text-muted-foreground">/ ฿{budget.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
