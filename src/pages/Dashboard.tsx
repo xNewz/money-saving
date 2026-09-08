@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ModeToggle } from "@/components/ModeToggle";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,10 +112,25 @@ export const Dashboard: React.FC = () => {
       return acc;
     }, {} as Record<string, number>);
 
-  const chartData = Object.keys(expensesByCategory).map(key => ({
+  const pieChartData = Object.keys(expensesByCategory).map(key => ({
     name: key,
     value: expensesByCategory[key]
   })).sort((a, b) => b.value - a.value);
+
+  // Prepare Daily Report data
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
+    return { day: i + 1, income: 0, expense: 0 };
+  });
+
+  filteredTransactions.forEach(tx => {
+    const d = new Date(tx.date).getDate();
+    if (tx.type === "income") {
+      dailyData[d - 1].income += tx.amount;
+    } else {
+      dailyData[d - 1].expense += tx.amount;
+    }
+  });
 
   const handleDeleteTx = async (id: string) => {
     if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) {
@@ -130,7 +145,6 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleDeleteAccount = async (id: string) => {
-    // Check if account has transactions
     const hasTxs = transactions.some(t => t.accountId === id);
     if (hasTxs) {
       toast.error("ไม่สามารถลบบัญชีที่มีรายการธุรกรรมอยู่ได้ กรุณาลบหรือย้ายรายการก่อน");
@@ -205,7 +219,6 @@ export const Dashboard: React.FC = () => {
   ];
   const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
-  // Account balances map
   const getAccountBalance = (accountId: string) => {
     const acc = accounts.find(a => a.id === accountId);
     if (!acc) return 0;
@@ -376,8 +389,9 @@ export const Dashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Charts & List */}
+        {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Pie Chart */}
           <Card>
             <CardHeader>
               <CardTitle>รายจ่ายแบ่งตามหมวดหมู่</CardTitle>
@@ -385,12 +399,12 @@ export const Dashboard: React.FC = () => {
             <CardContent className="flex justify-center">
               {loadingTxs ? (
                 <Skeleton className="h-[250px] w-[250px] rounded-full" />
-              ) : chartData.length > 0 ? (
+              ) : pieChartData.length > 0 ? (
                 <div className="h-[250px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={chartData}
+                        data={pieChartData}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -398,7 +412,7 @@ export const Dashboard: React.FC = () => {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {chartData.map((_entry, index) => (
+                        {pieChartData.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -415,72 +429,107 @@ export const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Bar Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>รายการธุรกรรม</CardTitle>
+              <CardTitle>รายงานรายวัน</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center">
               {loadingTxs ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
+                <Skeleton className="h-[250px] w-full" />
               ) : filteredTransactions.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredTransactions.map((tx) => {
-                    const acc = accounts.find(a => a.id === tx.accountId);
-                    return (
-                      <div key={tx.id} className="flex justify-between items-center p-3 rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                        {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: acc.color }} />}
-                        <div className="flex flex-col flex-1 pl-2">
-                          <span className="font-medium flex items-center gap-2">
-                            {tx.category}
-                            {acc && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-muted text-muted-foreground">
-                                {acc.name}
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(tx.date), "MMM d, yyyy")} {tx.note && `• ${tx.note}`}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className={`font-semibold ${tx.type === 'income' ? 'text-emerald-500' : ''}`}>
-                            {tx.type === 'income' ? '+' : '-'}฿{tx.amount.toFixed(2)}
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditTx(tx)}>
-                                <Edit2 className="h-4 w-4 mr-2" /> แก้ไข
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDeleteTx(tx.id)} className="text-destructive focus:text-destructive">
-                                <Trash2 className="h-4 w-4 mr-2" /> ลบ
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `฿${val}`} />
+                      <Tooltip 
+                        formatter={(value: any, name: any) => [`฿${Number(value).toFixed(2)}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
+                        labelFormatter={(label) => `วันที่ ${label} ${MONTHS[selectedMonth]}`}
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} />
+                      <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
-                  <p className="mb-4">ไม่พบรายการธุรกรรมในเดือนนี้</p>
-                  {accounts.length === 0 && (
-                    <p className="text-sm text-destructive">กรุณาสร้างบัญชีก่อนเพิ่มรายการธุรกรรม</p>
-                  )}
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+                  ไม่มีข้อมูลในเดือนนี้
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
+
+        {/* Transactions List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>รายการธุรกรรม</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingTxs ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : filteredTransactions.length > 0 ? (
+              <div className="space-y-4">
+                {filteredTransactions.map((tx) => {
+                  const acc = accounts.find(a => a.id === tx.accountId);
+                  return (
+                    <div key={tx.id} className="flex justify-between items-center p-3 rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                      {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: acc.color }} />}
+                      <div className="flex flex-col flex-1 pl-2">
+                        <span className="font-medium flex items-center gap-2">
+                          {tx.category}
+                          {acc && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-muted text-muted-foreground">
+                              {acc.name}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(tx.date), "MMM d, yyyy")} {tx.note && `• ${tx.note}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className={`font-semibold ${tx.type === 'income' ? 'text-emerald-500' : ''}`}>
+                          {tx.type === 'income' ? '+' : '-'}฿{tx.amount.toFixed(2)}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditTx(tx)}>
+                              <Edit2 className="h-4 w-4 mr-2" /> แก้ไข
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteTx(tx.id)} className="text-destructive focus:text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" /> ลบ
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
+                <p className="mb-4">ไม่พบรายการธุรกรรมในเดือนนี้</p>
+                {accounts.length === 0 && (
+                  <p className="text-sm text-destructive">กรุณาสร้างบัญชีก่อนเพิ่มรายการธุรกรรม</p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <TransactionModal 
