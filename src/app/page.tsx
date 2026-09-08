@@ -481,7 +481,12 @@ export default function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex justify-between items-end mb-2">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">งบประมาณรายเดือน</p>
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      งบประมาณรายเดือน
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                        เฉลี่ยไม่เกิน ฿{(budget / daysInMonth).toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
+                      </span>
+                    </p>
                     <div className="flex items-baseline gap-2">
                       <h3 className="text-2xl font-bold tracking-tight">฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0 })}</h3>
                       <span className="text-sm text-muted-foreground">/ ฿{budget.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
