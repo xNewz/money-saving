@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
-import type { Transaction, Account } from "@/types";
+import type { Transaction, Account, UserSettings } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
+import { BudgetModal } from "@/components/BudgetModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ModeToggle } from "@/components/ModeToggle";
 import { format } from "date-fns";
@@ -20,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658', '#ef5350'];
 
@@ -27,10 +29,14 @@ export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | undefined>(undefined);
   const [accountToEdit, setAccountToEdit] = useState<Account | undefined>(undefined);
+  
   const [loadingTxs, setLoadingTxs] = useState(true);
   const [loadingAccs, setLoadingAccs] = useState(true);
   
@@ -79,9 +85,19 @@ export const Dashboard: React.FC = () => {
       toast.error("กำลังเตรียมฐานข้อมูล บัญชีของคุณจะปรากฏขึ้นในไม่ช้า");
     });
 
+    // Fetch Settings (Budget)
+    const unsubSettings = onSnapshot(doc(db, "settings", user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setUserSettings({ id: docSnap.id, ...docSnap.data() } as UserSettings);
+      } else {
+        setUserSettings(null);
+      }
+    });
+
     return () => {
       unsubTxs();
       unsubAccs();
+      unsubSettings();
     };
   }, [user]);
 
@@ -121,6 +137,7 @@ export const Dashboard: React.FC = () => {
   });
 
   filteredTransactions.forEach(tx => {
+    if (tx.type === "transfer") return; // Ignore transfers in charts
     const d = new Date(tx.date).getDate();
     if (tx.type === "income") {
       dailyData[d - 1].income += tx.amount;
@@ -142,9 +159,9 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleDeleteAccount = async (id: string) => {
-    const hasTxs = transactions.some(t => t.accountId === id);
+    const hasTxs = transactions.some(t => t.accountId === id || t.toAccountId === id);
     if (hasTxs) {
-      toast.error("ไม่สามารถลบบัญชีที่มีรายการธุรกรรมอยู่ได้ กรุณาลบหรือย้ายรายการก่อน");
+      toast.error("ไม่สามารถลบบัญชีที่มีรายการธุรกรรม/โอนเงินอยู่ได้ กรุณาลบหรือย้ายรายการก่อน");
       return;
     }
 
@@ -185,13 +202,19 @@ export const Dashboard: React.FC = () => {
       return;
     }
     const csvContent = [
-      ["วันที่", "บัญชี", "ประเภท", "หมวดหมู่", "จำนวนเงิน", "บันทึกช่วยจำ"],
+      ["วันที่", "ประเภท", "จากบัญชี", "เข้าบัญชี", "หมวดหมู่", "จำนวนเงิน", "บันทึกช่วยจำ"],
       ...filteredTransactions.map(t => {
         const acc = accounts.find(a => a.id === t.accountId);
+        const toAcc = accounts.find(a => a.id === t.toAccountId);
+        
+        let typeStr = t.type === 'income' ? 'รายรับ' : 'รายจ่าย';
+        if (t.type === 'transfer') typeStr = 'โอนเงิน';
+
         return [
           t.date,
+          typeStr,
           `"${acc ? acc.name : 'ทั่วไป'}"`,
-          t.type === 'income' ? 'รายรับ' : 'รายจ่าย',
+          `"${toAcc ? toAcc.name : '-'}"`,
           t.category,
           t.amount,
           `"${t.note || ""}"`
@@ -219,17 +242,29 @@ export const Dashboard: React.FC = () => {
   const getAccountBalance = (accountId: string) => {
     const acc = accounts.find(a => a.id === accountId);
     if (!acc) return 0;
-    const accTxs = transactions.filter(t => t.accountId === accountId);
+    
+    // Income/Expense
+    const accTxs = transactions.filter(t => t.accountId === accountId && t.type !== 'transfer');
     const inc = accTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const exp = accTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    return acc.initialBalance + inc - exp;
+    
+    // Transfers
+    const transfersOut = transactions.filter(t => t.type === 'transfer' && t.accountId === accountId).reduce((s, t) => s + t.amount, 0);
+    const transfersIn = transactions.filter(t => t.type === 'transfer' && t.toAccountId === accountId).reduce((s, t) => s + t.amount, 0);
+
+    return acc.initialBalance + inc - exp - transfersOut + transfersIn;
   };
+
+  // Budget calculations
+  const budget = userSettings?.monthlyBudget || 0;
+  const percentUsed = budget > 0 ? (totalExpense / budget) * 100 : 0;
+  const isOverBudget = percentUsed >= 100;
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-4 md:p-8 transition-colors font-sans">
       <div className="max-w-5xl mx-auto space-y-8">
         
-        {/* Header - Mobile friendly with flex-wrap and gaps */}
+        {/* Header */}
         <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
           <div className="flex flex-col">
             <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">ภาพรวม</h1>
@@ -239,6 +274,10 @@ export const Dashboard: React.FC = () => {
             <ModeToggle />
             <Button onClick={handleExport} variant="outline" size="icon" title="ส่งออก CSV" className="hidden sm:flex rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
               <Download className="w-4 h-4" />
+            </Button>
+            <Button onClick={() => setIsBudgetModalOpen(true)} variant="outline" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
+              <Target className="w-4 h-4" />
+              <span>ตั้งงบประมาณ</span>
             </Button>
             <Button onClick={() => { setAccountToEdit(undefined); setIsAccountModalOpen(true); }} variant="secondary" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
               <CreditCard className="w-4 h-4" />
@@ -266,9 +305,14 @@ export const Dashboard: React.FC = () => {
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-tight">บัญชีของฉัน</h2>
-            <Button variant="ghost" size="sm" onClick={() => setIsAccountModalOpen(true)} className="sm:hidden text-primary h-8 px-2">
-              <Plus className="w-4 h-4 mr-1" /> เพิ่มบัญชี
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setIsBudgetModalOpen(true)} className="sm:hidden text-muted-foreground h-8 px-2">
+                <Target className="w-4 h-4 mr-1" /> ตั้งงบ
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setIsAccountModalOpen(true)} className="sm:hidden text-primary h-8 px-2">
+                <Plus className="w-4 h-4 mr-1" /> เพิ่มบัญชี
+              </Button>
+            </div>
           </div>
           
           {loadingAccs ? (
@@ -415,6 +459,34 @@ export const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Budget Progress Bar */}
+          {budget > 0 && (
+            <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex justify-between items-end mb-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">งบประมาณรายเดือน</p>
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="text-2xl font-bold tracking-tight">฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0 })}</h3>
+                      <span className="text-sm text-muted-foreground">/ ฿{budget.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
+                    </div>
+                  </div>
+                  <div className={`text-sm font-bold ${isOverBudget ? 'text-destructive' : percentUsed > 80 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                    {percentUsed.toFixed(1)}%
+                  </div>
+                </div>
+                <Progress 
+                  value={Math.min(percentUsed, 100)} 
+                  className="h-3"
+                  indicatorClassName={isOverBudget ? "bg-destructive" : percentUsed > 80 ? "bg-amber-500" : "bg-emerald-500"}
+                />
+                {isOverBudget && (
+                  <p className="text-xs text-destructive mt-2 font-medium">⚠️ คุณใช้จ่ายเกินงบประมาณที่ตั้งไว้แล้ว!</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </section>
 
         {/* Charts Section */}
@@ -500,7 +572,7 @@ export const Dashboard: React.FC = () => {
         {/* Transactions List */}
         <section>
           <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-muted/50 py-4">
+            <CardHeader className="bg-muted/30 border-b border-muted/50 py-4 flex flex-row justify-between items-center space-y-0">
               <CardTitle className="text-base font-semibold">รายการธุรกรรมล่าสุด</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -514,37 +586,56 @@ export const Dashboard: React.FC = () => {
                 <div className="divide-y divide-muted/50">
                   {filteredTransactions.map((tx) => {
                     const acc = accounts.find(a => a.id === tx.accountId);
+                    const toAcc = accounts.find(a => a.id === tx.toAccountId);
                     const isIncome = tx.type === 'income';
+                    const isTransfer = tx.type === 'transfer';
+                    
                     return (
                       <div key={tx.id} className="group flex justify-between items-center p-4 sm:px-6 hover:bg-muted/30 transition-colors duration-200 relative">
-                        {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: acc.color }} />}
+                        {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: isTransfer ? '#3b82f6' : acc.color }} />}
                         
                         <div className="flex items-center gap-4 flex-1 pl-2">
                           {/* Category Icon / Initial */}
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${isIncome ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'}`}>
-                            {tx.category.substring(0, 1)}
+                          <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
+                            isTransfer 
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
+                              : isIncome 
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
+                                : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
+                          }`}>
+                            {isTransfer ? <ArrowRightLeft className="w-4 h-4" /> : tx.category.substring(0, 1)}
                           </div>
                           
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-foreground tracking-tight">
-                              {tx.category}
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-foreground tracking-tight truncate">
+                              {isTransfer ? 'โอนเงิน' : tx.category}
                             </span>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {acc && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-background border text-muted-foreground font-medium">
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {isTransfer ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-medium truncate max-w-[120px] sm:max-w-[200px]">
+                                  {acc?.name} ➡️ {toAcc?.name}
+                                </span>
+                              ) : acc ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-background border text-muted-foreground font-medium truncate max-w-[100px]">
                                   {acc.name}
                                 </span>
-                              )}
-                              <span className="text-xs text-muted-foreground font-medium">
+                              ) : null}
+                              <span className="text-xs text-muted-foreground font-medium truncate">
                                 {format(new Date(tx.date), "d MMM yyyy")} {tx.note && `• ${tx.note}`}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-4">
-                          <div className={`font-bold tracking-tight text-right ${isIncome ? 'text-emerald-600 dark:text-emerald-500' : 'text-foreground'}`}>
-                            {isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})}
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                          <div className={`font-bold tracking-tight text-right ${
+                            isTransfer 
+                              ? 'text-blue-600 dark:text-blue-500' 
+                              : isIncome 
+                                ? 'text-emerald-600 dark:text-emerald-500' 
+                                : 'text-foreground'
+                          }`}>
+                            {isTransfer ? '' : isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})}
                           </div>
                           
                           <DropdownMenu>
@@ -595,6 +686,12 @@ export const Dashboard: React.FC = () => {
         isOpen={isAccountModalOpen}
         onClose={handleCloseAccountModal}
         existingAccount={accountToEdit}
+      />
+
+      <BudgetModal
+        isOpen={isBudgetModalOpen}
+        onClose={() => setIsBudgetModalOpen(false)}
+        currentBudget={userSettings?.monthlyBudget || 0}
       />
     </div>
   );

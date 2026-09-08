@@ -15,6 +15,7 @@ import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ArrowRightLeft } from "lucide-react";
 
 interface Props {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [toAccountId, setToAccountId] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,13 +43,14 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setDate(existingTransaction.date);
       setNote(existingTransaction.note || "");
       setAccountId(existingTransaction.accountId || "");
+      setToAccountId(existingTransaction.toAccountId || "");
     } else {
       setType("expense");
       setAmount("");
       setCategory("");
       setDate(format(new Date(), "yyyy-MM-dd"));
       setNote("");
-      // Default to first account if none selected
+      setToAccountId("");
       if (accounts.length > 0 && !accountId) {
         setAccountId(accounts[0].id);
       }
@@ -58,12 +61,24 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !amount || !category || !date) return;
+    if (!user || !amount || !date) return;
     
-    // Check if account is required and available
+    if (type !== "transfer" && !category) return;
+
     if (accounts.length > 0 && !accountId) {
-      toast.error("กรุณาเลือกบัญชี");
+      toast.error(type === "transfer" ? "กรุณาเลือกบัญชีต้นทาง" : "กรุณาเลือกบัญชี");
       return;
+    }
+
+    if (type === "transfer") {
+      if (!toAccountId) {
+        toast.error("กรุณาเลือกบัญชีปลายทาง");
+        return;
+      }
+      if (accountId === toAccountId) {
+        toast.error("บัญชีต้นทางและปลายทางต้องไม่ซ้ำกัน");
+        return;
+      }
     }
 
     setLoading(true);
@@ -71,9 +86,10 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       const data = {
         userId: user.uid,
         accountId: accountId || null,
+        toAccountId: type === "transfer" ? (toAccountId || null) : null,
         amount: parseFloat(amount),
         type,
-        category,
+        category: type === "transfer" ? "โอนเงิน" : category,
         date,
         note,
       };
@@ -104,11 +120,11 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
           <DialogTitle>{existingTransaction ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <div className="flex gap-4">
+          <div className="flex gap-2">
             <Button
               type="button"
               variant={type === "expense" ? "default" : "outline"}
-              className={`w-full ${type === "expense" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}`}
+              className={`flex-1 ${type === "expense" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}`}
               onClick={() => { setType("expense"); setCategory(""); }}
             >
               รายจ่าย
@@ -116,10 +132,18 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
             <Button
               type="button"
               variant={type === "income" ? "default" : "outline"}
-              className={`w-full ${type === "income" ? "bg-emerald-500 text-white hover:bg-emerald-600" : ""}`}
+              className={`flex-1 ${type === "income" ? "bg-emerald-500 text-white hover:bg-emerald-600" : ""}`}
               onClick={() => { setType("income"); setCategory(""); }}
             >
               รายรับ
+            </Button>
+            <Button
+              type="button"
+              variant={type === "transfer" ? "default" : "outline"}
+              className={`flex-1 ${type === "transfer" ? "bg-blue-500 text-white hover:bg-blue-600" : ""}`}
+              onClick={() => { setType("transfer"); setCategory("โอนเงิน"); }}
+            >
+              <ArrowRightLeft className="w-4 h-4 mr-1" /> โอนเงิน
             </Button>
           </div>
 
@@ -136,23 +160,46 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
           </div>
 
           {accounts.length > 0 ? (
-            <div className="space-y-2">
-              <Label>บัญชี</Label>
-              <Select value={accountId} onValueChange={setAccountId} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="เลือกบัญชี" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
-                        {acc.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className={`grid gap-4 ${type === 'transfer' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className="space-y-2">
+                <Label>{type === 'transfer' ? 'จากบัญชี' : 'บัญชี'}</Label>
+                <Select value={accountId} onValueChange={setAccountId} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกบัญชี" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                          <span className="truncate max-w-[100px]">{acc.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {type === 'transfer' && (
+                <div className="space-y-2">
+                  <Label>เข้าบัญชี</Label>
+                  <Select value={toAccountId} onValueChange={setToAccountId} required={type === 'transfer'}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกบัญชี" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id} disabled={acc.id === accountId}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                            <span className="truncate max-w-[100px]">{acc.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm text-amber-600 dark:text-amber-400 p-2 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-900">
@@ -160,21 +207,23 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>หมวดหมู่</Label>
-            <Select value={category} onValueChange={setCategory} required>
-              <SelectTrigger>
-                <SelectValue placeholder="เลือกหมวดหมู่" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {type !== "transfer" && (
+            <div className="space-y-2">
+              <Label>หมวดหมู่</Label>
+              <Select value={category} onValueChange={setCategory} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกหมวดหมู่" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>วันที่</Label>
@@ -199,7 +248,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
             <Button type="button" variant="outline" onClick={onClose}>
               ยกเลิก
             </Button>
-            <Button type="submit" disabled={loading || !amount || !category}>
+            <Button type="submit" disabled={loading || !amount || (type !== 'transfer' && !category) || (type === 'transfer' && !toAccountId)}>
               {loading ? "กำลังบันทึก..." : "บันทึก"}
             </Button>
           </div>

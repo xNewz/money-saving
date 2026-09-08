@@ -1,4 +1,4 @@
-export type TransactionType = "income" | "expense";
+export type TransactionType = "income" | "expense" | "transfer";
 
 export interface Account {
   id: string;
@@ -11,8 +11,9 @@ export interface Account {
 
 export interface Transaction {
   id: string;
-  accountId?: string; // Optional for backward compatibility with older data
   userId: string;
+  accountId?: string;
+  toAccountId?: string;
   amount: number;
   type: TransactionType;
   category: string;
@@ -38,3 +39,8 @@ export const INCOME_CATEGORIES = [
   "ของขวัญ",
   "อื่นๆ",
 ];
+
+export interface UserSettings {
+  id: string;
+  monthlyBudget: number;
+}
