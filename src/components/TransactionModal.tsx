@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account, type Debt, type Goal } from "@/types";
+import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account, type Debt, type Goal, EXTENDED_BANK_LISTS } from "@/types";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, updateDoc, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -203,7 +203,11 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                     {accounts.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                          {acc.bankSymbol && EXTENDED_BANK_LISTS[acc.bankSymbol] ? (
+                            <img src={EXTENDED_BANK_LISTS[acc.bankSymbol].icon} alt={EXTENDED_BANK_LISTS[acc.bankSymbol].name} className="w-4 h-4 rounded-sm" />
+                          ) : (
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                          )}
                           <span className="truncate max-w-[100px]">{acc.name}</span>
                         </div>
                       </SelectItem>
@@ -223,7 +227,11 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                       {accounts.map((acc) => (
                         <SelectItem key={acc.id} value={acc.id} disabled={acc.id === accountId}>
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                            {acc.bankSymbol && EXTENDED_BANK_LISTS[acc.bankSymbol] ? (
+                              <img src={EXTENDED_BANK_LISTS[acc.bankSymbol].icon} alt={EXTENDED_BANK_LISTS[acc.bankSymbol].name} className="w-4 h-4 rounded-sm" />
+                            ) : (
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                            )}
                             <span className="truncate max-w-[100px]">{acc.name}</span>
                           </div>
                         </SelectItem>

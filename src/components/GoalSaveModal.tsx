@@ -15,6 +15,7 @@ import { collection, addDoc, query, where, onSnapshot } from "firebase/firestore
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { type Goal, type Account, EXTENDED_BANK_LISTS } from "@/types";
 
 interface Props {
   isOpen: boolean;
@@ -121,7 +122,11 @@ export const GoalSaveModal: React.FC<Props> = ({ isOpen, onClose, goal }) => {
                   {accounts.map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                        {acc.bankSymbol && EXTENDED_BANK_LISTS[acc.bankSymbol] ? (
+                          <img src={EXTENDED_BANK_LISTS[acc.bankSymbol].icon} alt={EXTENDED_BANK_LISTS[acc.bankSymbol].name} className="w-4 h-4 rounded-sm" />
+                        ) : (
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                        )}
                         <span className="truncate max-w-[150px]">{acc.name}</span>
                       </div>
                     </SelectItem>

@@ -4,6 +4,7 @@ export interface Account {
   id: string;
   userId: string;
   name: string;
+  bankSymbol?: string;
   initialBalance: number;
   color: string;
   createdAt: number;
@@ -69,3 +70,17 @@ export interface UserSettings {
   id: string;
   monthlyBudget: number;
 }
+
+import { bankLists } from "thai-banks-logo";
+
+export const EXTENDED_BANK_LISTS: Record<string, any> = {
+  ...bankLists,
+  CUSTOM_WALLET_1: {
+    name: "เป๋าตัง",
+    fullname: "กระเป๋าเงินอิเล็กทรอนิกส์",
+    nameEN: "E-Wallet",
+    symbol: "CUSTOM_WALLET_1",
+    icon: "https://play-lh.googleusercontent.com/P55R06USyrtExssiU1Arb88uToqB8LUYMCl-7XqohLp2norQTRdDdppliIE3n5iwQmM20J6iOWGQGzxMdTuG=w240-h480",
+    color: "#4f46e5"
+  }
+};

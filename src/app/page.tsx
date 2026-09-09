@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
-import type { Transaction, Account, UserSettings, Debt } from "@/types";
-import { EXPENSE_CATEGORY_GROUPS } from "@/types";
+import type { Transaction, Account, UserSettings, Debt, Goal } from "@/types";
+import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2 } from "lucide-react";
@@ -430,7 +430,11 @@ export default function Dashboard() {
                     <div className="absolute top-0 left-0 w-1.5 h-full transition-all group-hover:w-2" style={{ backgroundColor: acc.color }} />
                     <CardHeader className="py-4 px-5 flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-semibold truncate flex items-center gap-2 text-muted-foreground">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
+                        {acc.bankSymbol && EXTENDED_BANK_LISTS[acc.bankSymbol] ? (
+                          <img src={EXTENDED_BANK_LISTS[acc.bankSymbol].icon} alt={EXTENDED_BANK_LISTS[acc.bankSymbol].name} className="w-4 h-4 rounded-sm" />
+                        ) : (
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
+                        )}
                         {acc.name}
                       </CardTitle>
                       <DropdownMenu>

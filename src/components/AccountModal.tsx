@@ -8,7 +8,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type Account } from "@/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { type Account, EXTENDED_BANK_LISTS } from "@/types";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +42,7 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
   const [name, setName] = useState("");
   const [initialBalance, setInitialBalance] = useState("0");
   const [color, setColor] = useState(ACCOUNT_COLORS[0]);
+  const [bankSymbol, setBankSymbol] = useState("none");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -42,12 +50,25 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
       setName(existingAccount.name);
       setInitialBalance(existingAccount.initialBalance.toString());
       setColor(existingAccount.color);
+      setBankSymbol(existingAccount.bankSymbol || "none");
     } else {
       setName("");
       setInitialBalance("0");
       setColor(ACCOUNT_COLORS[0]);
+      setBankSymbol("none");
     }
   }, [existingAccount, isOpen]);
+
+  const handleBankChange = (val: string) => {
+    setBankSymbol(val);
+    if (val !== "none" && EXTENDED_BANK_LISTS[val]) {
+      const bank = EXTENDED_BANK_LISTS[val];
+      if (!name || name === "") {
+        setName(bank.name);
+      }
+      setColor(bank.color);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +79,7 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
       const data = {
         userId: user.uid,
         name,
+        bankSymbol: bankSymbol === "none" ? null : bankSymbol,
         initialBalance: parseFloat(initialBalance) || 0,
         color,
       };
@@ -88,6 +110,26 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
           <DialogTitle>{existingAccount ? "แก้ไขบัญชี" : "เพิ่มบัญชีใหม่"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <Label htmlFor="bank">ไอคอนธนาคาร (ไม่บังคับ)</Label>
+            <Select value={bankSymbol} onValueChange={handleBankChange}>
+              <SelectTrigger id="bank">
+                <SelectValue placeholder="ไม่มี (กำหนดเอง)" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="none">ไม่มี (กำหนดเอง)</SelectItem>
+                {Object.entries(EXTENDED_BANK_LISTS).map(([symbol, bank]) => (
+                  <SelectItem key={symbol} value={symbol}>
+                    <div className="flex items-center gap-2">
+                      <img src={bank.icon} alt={bank.name} className="w-5 h-5 rounded" />
+                      <span>{bank.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">ชื่อบัญชี</Label>
             <Input
