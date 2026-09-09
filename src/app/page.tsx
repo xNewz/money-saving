@@ -373,6 +373,11 @@ export default function Dashboard() {
 
   const remainingDailyBudget = averageBudgetPerDay - spentToday;
 
+  const daysLeftAfterToday = daysLeftIncludingToday - 1;
+  const futureAverageBudget = daysLeftAfterToday > 0 
+    ? Math.max(0, (budget - totalExpense) / daysLeftAfterToday) 
+    : 0;
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -674,9 +679,15 @@ export default function Dashboard() {
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center flex-wrap gap-2">
                         <p className="text-sm font-medium text-muted-foreground">งบประมาณรายเดือน</p>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                          เฉลี่ยไม่เกิน ฿{averageBudgetPerDay.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
-                        </span>
+                        {remainingDailyBudget < 0 && isCurrentMonth ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-500 font-semibold">
+                            เป้าหมายถูกปรับลดเหลือ ฿{futureAverageBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                            เฉลี่ยไม่เกิน ฿{averageBudgetPerDay.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
+                          </span>
+                        )}
                       </div>
                       {budget > 0 && isCurrentMonth && (
                         <div className="flex items-center gap-2">
