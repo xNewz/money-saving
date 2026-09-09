@@ -22,15 +22,14 @@ export interface Transaction {
   createdAt: number;
 }
 
-export const EXPENSE_CATEGORIES = [
-  "อาหาร",
-  "เดินทาง",
-  "สาธารณูปโภค",
-  "บันเทิง",
-  "ช้อปปิ้ง",
-  "สุขภาพ",
-  "อื่นๆ",
-];
+export const EXPENSE_CATEGORY_GROUPS = {
+  "รายจ่ายคงที่": ["สาธารณูปโภค", "ค่าเช่า/ผ่อนบ้าน", "ค่าเน็ต/โทรศัพท์"],
+  "รายจ่ายผันแปร": ["อาหาร", "เดินทาง", "บันเทิง", "ช้อปปิ้ง", "สุขภาพ", "อื่นๆ"],
+  "เงินออม/เงินลงทุน": ["เงินออม", "การลงทุน"],
+  "เงินผ่อนหนี้": ["บัตรเครดิต", "สินเชื่อ/ผ่อนชำระ"]
+};
+
+export const EXPENSE_CATEGORIES = Object.values(EXPENSE_CATEGORY_GROUPS).flat();
 
 export const INCOME_CATEGORIES = [
   "เงินเดือน",

@@ -6,9 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
 import type { Transaction, Account, UserSettings } from "@/types";
+import { EXPENSE_CATEGORY_GROUPS } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2 } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
@@ -143,6 +144,26 @@ export default function Dashboard() {
     name: key,
     value: expensesByCategory[key]
   })).sort((a, b) => b.value - a.value);
+
+  // Group buckets for Net Balance calculation
+  const categoryToGroup: Record<string, string> = {};
+  Object.entries(EXPENSE_CATEGORY_GROUPS).forEach(([group, cats]) => {
+    cats.forEach(c => categoryToGroup[c] = group);
+  });
+
+  const expensesByBucket = filteredTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((acc, t) => {
+      const group = categoryToGroup[t.category] || "รายจ่ายผันแปร";
+      acc[group] = (acc[group] || 0) + t.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+  const fixedExp = expensesByBucket["รายจ่ายคงที่"] || 0;
+  const variableExp = expensesByBucket["รายจ่ายผันแปร"] || 0;
+  const savingExp = expensesByBucket["เงินออม/เงินลงทุน"] || 0;
+  const debtExp = expensesByBucket["เงินผ่อนหนี้"] || 0;
+  const netBalanceMonthly = totalIncome - (fixedExp + variableExp + savingExp + debtExp);
 
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
@@ -321,6 +342,10 @@ export default function Dashboard() {
               <DropdownMenuContent align="end" className="w-56 rounded-xl">
                 <DropdownMenuLabel className="font-semibold text-muted-foreground">เมนูเพิ่มเติม</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/reports")} className="rounded-lg cursor-pointer py-2.5">
+                  <BarChart2 className="w-4 h-4 mr-2" />
+                  <span>รายงานเชิงลึก</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/tax")} className="rounded-lg cursor-pointer py-2.5">
                   <Calculator className="w-4 h-4 mr-2" />
                   <span>คำนวณภาษี</span>
@@ -509,6 +534,35 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Net Balance Formula Breakdown */}
+          <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Target className="w-4 h-4 text-primary" />
+                สรุปเงินคงเหลือสุทธิ (เดือนนี้)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                  <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg whitespace-nowrap">รายรับ ฿{totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="text-muted-foreground">-</span>
+                  <span className="px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg whitespace-nowrap">คงที่ ฿{fixedExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="text-muted-foreground">-</span>
+                  <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg whitespace-nowrap">ผันแปร ฿{variableExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="text-muted-foreground">-</span>
+                  <span className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg whitespace-nowrap">ออม/ลงทุน ฿{savingExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="text-muted-foreground">-</span>
+                  <span className="px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg whitespace-nowrap">ผ่อนหนี้ ฿{debtExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="text-muted-foreground font-bold">=</span>
+                  <span className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap shadow-sm ${netBalanceMonthly >= 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                    สุทธิ ฿{netBalanceMonthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Budget Progress Bar */}
           {budget > 0 && (

@@ -8,8 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account } from "@/types";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account } from "@/types";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,7 +57,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
     }
   }, [existingTransaction, isOpen, accounts]);
 
-  const categories = type === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+  const categories = type === "expense" ? Object.values(EXPENSE_CATEGORY_GROUPS).flat() : INCOME_CATEGORIES;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,11 +215,22 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                   <SelectValue placeholder="เลือกหมวดหมู่" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
+                  {type === "expense" ? (
+                    Object.entries(EXPENSE_CATEGORY_GROUPS).map(([group, cats]) => (
+                      <SelectGroup key={group}>
+                        <SelectLabel className="bg-muted/30 px-2 py-1.5 text-xs font-semibold text-muted-foreground">{group}</SelectLabel>
+                        {cats.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))
+                  ) : (
+                    INCOME_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
