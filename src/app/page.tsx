@@ -9,7 +9,7 @@ import type { Transaction, Account, UserSettings, Debt, Goal } from "@/types";
 import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2 } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
@@ -361,6 +361,10 @@ export default function Dashboard() {
               <DropdownMenuContent align="end" className="w-56 rounded-xl">
                 <DropdownMenuLabel className="font-semibold text-muted-foreground">เมนูเพิ่มเติม</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/insights")} className="rounded-lg cursor-pointer py-2.5">
+                  <Sparkles className="w-4 h-4 mr-2 text-violet-500" />
+                  <span className="text-violet-600 dark:text-violet-400 font-medium">ผู้ช่วยวิเคราะห์ (AI)</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/reports")} className="rounded-lg cursor-pointer py-2.5">
                   <BarChart2 className="w-4 h-4 mr-2" />
                   <span>รายงานเชิงลึก</span>

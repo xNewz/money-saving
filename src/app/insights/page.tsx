@@ -1,0 +1,321 @@
+"use client";
+
+import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import type { Transaction } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Sparkles, AlertTriangle, TrendingUp, TrendingDown, Lightbulb, Brain, CheckCircle2 } from "lucide-react";
+import { ModeToggle } from "@/components/ModeToggle";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { isSameMonth, subMonths } from "date-fns";
+
+type AlertType = 'warning' | 'success' | 'info';
+
+interface InsightAlert {
+  id: string;
+  type: AlertType;
+  title: string;
+  message: string;
+  icon: React.ReactNode;
+}
+
+export default function Insights() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Fetch Transactions
+    const qTxs = query(collection(db, "transactions"), where("userId", "==", user.uid));
+    const unsubTxs = onSnapshot(qTxs, (snapshot) => {
+      const txs: Transaction[] = [];
+      snapshot.forEach((doc) => txs.push({ id: doc.id, ...doc.data() } as Transaction));
+      setTransactions(txs);
+      setLoadingData(false);
+    });
+
+    return () => {
+      unsubTxs();
+    };
+  }, [user]);
+
+  // Aggregate Data and Generate Insights
+  const { chartData, alerts, currentMonthTotal, lastMonthTotal } = useMemo(() => {
+    if (transactions.length === 0) return { chartData: [], alerts: [], currentMonthTotal: 0, lastMonthTotal: 0 };
+
+    const today = new Date();
+    const lastMonthDate = subMonths(today, 1);
+
+    const currentMonthTxs = transactions.filter(t => t.type === 'expense' && isSameMonth(new Date(t.date), today));
+    const lastMonthTxs = transactions.filter(t => t.type === 'expense' && isSameMonth(new Date(t.date), lastMonthDate));
+
+    let currentTotal = 0;
+    let lastTotal = 0;
+
+    const categoryMap: Record<string, { current: number; last: number }> = {};
+
+    currentMonthTxs.forEach(tx => {
+      currentTotal += tx.amount;
+      if (!categoryMap[tx.category]) categoryMap[tx.category] = { current: 0, last: 0 };
+      categoryMap[tx.category].current += tx.amount;
+    });
+
+    lastMonthTxs.forEach(tx => {
+      lastTotal += tx.amount;
+      if (!categoryMap[tx.category]) categoryMap[tx.category] = { current: 0, last: 0 };
+      categoryMap[tx.category].last += tx.amount;
+    });
+
+    // Prepare chart data
+    const chartData = Object.keys(categoryMap)
+      .map(cat => ({
+        category: cat,
+        "เดือนนี้": categoryMap[cat].current,
+        "เดือนที่แล้ว": categoryMap[cat].last,
+        diff: categoryMap[cat].current - categoryMap[cat].last
+      }))
+      .sort((a, b) => b["เดือนนี้"] - a["เดือนนี้"]); // Sort by highest spending this month
+
+    // Generate Insights Alerts
+    const newAlerts: InsightAlert[] = [];
+
+    // Rule 1: Overall Spending
+    if (lastTotal > 0) {
+      const diffPercent = ((currentTotal - lastTotal) / lastTotal) * 100;
+      if (diffPercent > 20) {
+        newAlerts.push({
+          id: 'overall_high',
+          type: 'warning',
+          title: 'เตือนภัย: ใช้เงินเยอะผิดปกติ!',
+          message: `เดือนนี้คุณใช้จ่ายไปแล้ว ฿${currentTotal.toLocaleString()} ซึ่งสูงกว่าเดือนที่แล้วถึง ${diffPercent.toFixed(1)}% ระมัดระวังการใช้เงินด้วยนะครับ`,
+          icon: <AlertTriangle className="w-5 h-5 text-rose-500" />
+        });
+      } else if (diffPercent < -10 && currentTotal > 0) { // If they saved money
+        newAlerts.push({
+          id: 'overall_low',
+          type: 'success',
+          title: 'เยี่ยมมาก! คุณประหยัดเงินได้ดีเยี่ยม',
+          message: `คุณใช้จ่ายน้อยลง ${Math.abs(diffPercent).toFixed(1)}% เมื่อเทียบกับเดือนที่แล้ว ถือเป็นการเริ่มต้นที่ดี!`,
+          icon: <Sparkles className="w-5 h-5 text-emerald-500" />
+        });
+      }
+    } else if (currentTotal > 0 && lastTotal === 0) {
+        newAlerts.push({
+          id: 'welcome',
+          type: 'info',
+          title: 'ยินดีต้อนรับสู่เดือนแรก',
+          message: `ดูเหมือนว่าเดือนที่แล้วจะยังไม่มีข้อมูล ระบบจะเริ่มเปรียบเทียบเชิงลึกได้ในเดือนถัดไปครับ!`,
+          icon: <Lightbulb className="w-5 h-5 text-blue-500" />
+        });
+    }
+
+    // Rule 2: Category Spikes
+    chartData.forEach(item => {
+      if (item["เดือนที่แล้ว"] > 0) {
+        const catDiffPercent = ((item["เดือนนี้"] - item["เดือนที่แล้ว"]) / item["เดือนที่แล้ว"]) * 100;
+        if (catDiffPercent > 30 && item["เดือนนี้"] > 500) { // Only alert if significant amount (> 500 thb)
+          newAlerts.push({
+            id: `cat_spike_${item.category}`,
+            type: 'warning',
+            title: `เตือนภัยหมวด: ${item.category}`,
+            message: `หมวดหมู่นี้คุณใช้จ่ายพุ่งกระฉูดถึง ${catDiffPercent.toFixed(1)}% (฿${item["เดือนนี้"].toLocaleString()}) เมื่อเทียบกับเดือนที่แล้ว!`,
+            icon: <TrendingUp className="w-5 h-5 text-amber-500" />
+          });
+        }
+      }
+    });
+
+    // Rule 3: Category Savings
+    chartData.forEach(item => {
+        if (item["เดือนที่แล้ว"] > 0 && item["เดือนนี้"] > 0) {
+          const catDiffPercent = ((item["เดือนนี้"] - item["เดือนที่แล้ว"]) / item["เดือนที่แล้ว"]) * 100;
+          if (catDiffPercent < -30 && item["เดือนที่แล้ว"] > 1000) { 
+            newAlerts.push({
+              id: `cat_save_${item.category}`,
+              type: 'success',
+              title: `ทำได้ดีมากในหมวด: ${item.category}`,
+              message: `คุณลดค่าใช้จ่ายหมวดนี้ลงได้ถึง ${Math.abs(catDiffPercent).toFixed(1)}% เก่งมากครับ!`,
+              icon: <TrendingDown className="w-5 h-5 text-emerald-500" />
+            });
+          }
+        }
+      });
+
+    // Default Good behavior message if no alerts
+    if (newAlerts.length === 0 && currentTotal > 0) {
+        newAlerts.push({
+            id: 'all_good',
+            type: 'success',
+            title: 'พฤติกรรมการใช้จ่ายของคุณอยู่ในเกณฑ์ปกติ',
+            message: `ยอดเยี่ยมมาก! การใช้จ่ายของคุณเดือนนี้ไม่มีอะไรผิดปกติหรือน่ากังวลเลย`,
+            icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+          });
+    }
+
+    return { 
+      chartData: chartData.slice(0, 10), // Top 10 categories
+      alerts: newAlerts,
+      currentMonthTotal: currentTotal,
+      lastMonthTotal: lastTotal
+    };
+  }, [transactions]);
+
+  if (loading || !user) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  const getAlertStyle = (type: AlertType) => {
+      switch (type) {
+          case 'warning': return 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20';
+          case 'success': return 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20';
+          case 'info': return 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20';
+      }
+  }
+
+  const getAlertTitleStyle = (type: AlertType) => {
+    switch (type) {
+        case 'warning': return 'text-rose-700 dark:text-rose-400';
+        case 'success': return 'text-emerald-700 dark:text-emerald-400';
+        case 'info': return 'text-blue-700 dark:text-blue-400';
+    }
+}
+
+  return (
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-4 md:p-8 transition-colors font-sans">
+      <div className="max-w-5xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full shadow-sm">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent flex items-center gap-2">
+                ผู้ช่วยวิเคราะห์ <Sparkles className="w-5 h-5 text-fuchsia-500" />
+              </h1>
+              <p className="text-muted-foreground text-sm font-medium">AI Insights & Analytics Dashboard</p>
+            </div>
+          </div>
+          <div className="flex gap-2 items-center">
+            <ModeToggle />
+          </div>
+        </header>
+
+        {/* AI Alerts Section */}
+        <section className="space-y-4">
+            <div className="flex items-center gap-2 text-lg font-semibold">
+                <Brain className="w-5 h-5 text-violet-500" />
+                <h2>ข้อความวิเคราะห์จาก AI ประจำเดือนนี้</h2>
+            </div>
+
+            {loadingData ? (
+                <div className="space-y-3">
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                    <Skeleton className="h-24 w-full rounded-2xl" />
+                </div>
+            ) : alerts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {alerts.map(alert => (
+                        <div key={alert.id} className={`p-5 rounded-2xl border shadow-sm flex gap-4 items-start transition-all hover:shadow-md ${getAlertStyle(alert.type)}`}>
+                            <div className="bg-background/80 backdrop-blur-sm p-2 rounded-xl shadow-sm shrink-0">
+                                {alert.icon}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <h3 className={`font-semibold ${getAlertTitleStyle(alert.type)}`}>{alert.title}</h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">{alert.message}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <Card className="border-dashed shadow-none bg-transparent rounded-2xl">
+                    <CardContent className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+                        <Brain className="w-12 h-12 opacity-20 mb-3" />
+                        <p className="font-medium">ยังไม่มีข้อมูลเพียงพอให้ AI วิเคราะห์</p>
+                    </CardContent>
+                </Card>
+            )}
+        </section>
+
+        {/* Overview Stats */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <Card className="bg-gradient-to-br from-background to-muted/20 shadow-sm rounded-2xl overflow-hidden border-muted/50">
+                <div className="h-1 w-full bg-primary/20" />
+                <CardContent className="p-6">
+                    <div className="flex flex-col gap-1">
+                        <p className="text-sm font-medium text-muted-foreground">รวมรายจ่ายเดือนนี้</p>
+                        {loadingData ? <Skeleton className="h-10 w-1/2 mt-1" /> : (
+                            <h2 className="text-3xl font-bold tracking-tight">฿{currentMonthTotal.toLocaleString(undefined, {minimumFractionDigits: 0})}</h2>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-background to-muted/20 shadow-sm rounded-2xl overflow-hidden border-muted/50">
+                <div className="h-1 w-full bg-muted" />
+                <CardContent className="p-6">
+                     <div className="flex flex-col gap-1">
+                        <p className="text-sm font-medium text-muted-foreground">รวมรายจ่ายเดือนที่แล้ว</p>
+                        {loadingData ? <Skeleton className="h-10 w-1/2 mt-1" /> : (
+                            <h2 className="text-3xl font-bold tracking-tight text-muted-foreground">฿{lastMonthTotal.toLocaleString(undefined, {minimumFractionDigits: 0})}</h2>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+        </section>
+
+        {/* Charts Section */}
+        <section>
+          <Card className="rounded-2xl shadow-sm border-muted/50">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">เปรียบเทียบรายจ่ายแต่ละหมวดหมู่ (เดือนนี้ vs เดือนที่แล้ว)</CardTitle>
+            </CardHeader>
+            <CardContent className="pb-6">
+              {loadingData ? (
+                  <Skeleton className="h-[350px] w-full" />
+              ) : chartData.length > 0 ? (
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
+                      <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} angle={-30} textAnchor="end" />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(val) => `฿${val >= 1000 ? (val/1000)+'k' : val}`} />
+                      <Tooltip 
+                        formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString()}`, name]} 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                      <Bar dataKey="เดือนนี้" fill="#a855f7" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      <Bar dataKey="เดือนที่แล้ว" fill="hsl(var(--muted))" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                  <div className="h-[350px] flex items-center justify-center text-muted-foreground text-sm font-medium">
+                  ไม่มีข้อมูลเปรียบเทียบ
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+      </div>
+    </div>
+  );
+}
