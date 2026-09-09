@@ -69,6 +69,7 @@ export const INCOME_CATEGORIES = [
 export interface UserSettings {
   id: string;
   monthlyBudget: number;
+  paydayDate?: number; // 1-31
 }
 
 import { bankLists } from "thai-banks-logo";

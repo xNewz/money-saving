@@ -141,12 +141,18 @@ export default function Dashboard() {
     };
   }, [user]);
 
+  const paydayDate = userSettings?.paydayDate || 1;
+  const monthOffset = paydayDate > 15 ? -1 : 0;
+  const cycleStartDate = new Date(selectedYear, selectedMonth + monthOffset, paydayDate);
+  const cycleEndDate = new Date(selectedYear, selectedMonth + monthOffset + 1, paydayDate - 1);
+  cycleEndDate.setHours(23, 59, 59, 999);
+
   const filteredTransactions = transactions.filter(t => {
     const d = new Date(t.date);
-    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    return d >= cycleStartDate && d <= cycleEndDate;
   });
 
-  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const daysInMonth = Math.round((cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
 
   const transactionsForTable = tableDateFilter === 'all' 
     ? filteredTransactions 
@@ -207,16 +213,21 @@ export default function Dashboard() {
   const netBalanceMonthly = totalIncome - (fixedExp + variableExp + savingExp + debtExp);
 
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
-    return { day: i + 1, income: 0, expense: 0 };
+    const d = new Date(cycleStartDate);
+    d.setDate(d.getDate() + i);
+    return { day: d.getDate(), income: 0, expense: 0 };
   });
 
   filteredTransactions.forEach(tx => {
     if (tx.type === "transfer") return; // Ignore transfers in charts
-    const d = new Date(tx.date).getDate();
-    if (tx.type === "income") {
-      dailyData[d - 1].income += tx.amount;
-    } else {
-      dailyData[d - 1].expense += tx.amount;
+    const d = new Date(tx.date);
+    const dayIndex = Math.floor((d.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (dayIndex >= 0 && dayIndex < daysInMonth) {
+      if (tx.type === "income") {
+        dailyData[dayIndex].income += tx.amount;
+      } else {
+        dailyData[dayIndex].expense += tx.amount;
+      }
     }
   });
 
@@ -335,15 +346,31 @@ export default function Dashboard() {
   const isOverBudget = percentUsed >= 100;
 
   const today = new Date();
-  const isCurrentMonth = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear;
+  const isCurrentMonth = today >= cycleStartDate && today <= cycleEndDate;
   
   const spentToday = isCurrentMonth 
     ? filteredTransactions
-        .filter(t => t.type === 'expense' && new Date(t.date).getDate() === today.getDate())
+        .filter(t => {
+          if (t.type !== 'expense') return false;
+          const d = new Date(t.date);
+          return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+        })
         .reduce((acc, t) => acc + t.amount, 0)
     : 0;
 
-  const averageBudgetPerDay = budget / daysInMonth;
+  let daysLeftIncludingToday = daysInMonth;
+  if (isCurrentMonth) {
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+    daysLeftIncludingToday = Math.round((cycleEndDate.getTime() - todayStart.getTime()) / 86400000);
+  }
+
+  const expenseBeforeToday = isCurrentMonth ? totalExpense - spentToday : totalExpense;
+  
+  const averageBudgetPerDay = isCurrentMonth 
+    ? Math.max(0, (budget - expenseBeforeToday) / daysLeftIncludingToday)
+    : budget / daysInMonth;
+
   const remainingDailyBudget = averageBudgetPerDay - spentToday;
 
   if (loading || !user) {
@@ -911,6 +938,7 @@ export default function Dashboard() {
         isOpen={isBudgetModalOpen}
         onClose={() => setIsBudgetModalOpen(false)}
         currentBudget={userSettings?.monthlyBudget || 0}
+        currentPayday={userSettings?.paydayDate || 1}
       />
     </div>
   );

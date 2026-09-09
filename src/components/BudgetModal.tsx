@@ -17,18 +17,21 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   currentBudget: number;
+  currentPayday?: number;
 }
 
-export const BudgetModal: React.FC<Props> = ({ isOpen, onClose, currentBudget }) => {
+export const BudgetModal: React.FC<Props> = ({ isOpen, onClose, currentBudget, currentPayday }) => {
   const { user } = useAuth();
   const [amount, setAmount] = useState("");
+  const [payday, setPayday] = useState("1");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setAmount(currentBudget > 0 ? currentBudget.toString() : "");
+      setPayday(currentPayday ? currentPayday.toString() : "1");
     }
-  }, [isOpen, currentBudget]);
+  }, [isOpen, currentBudget, currentPayday]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +42,7 @@ export const BudgetModal: React.FC<Props> = ({ isOpen, onClose, currentBudget })
       const budgetValue = parseFloat(amount) || 0;
       await setDoc(doc(db, "settings", user.uid), {
         monthlyBudget: budgetValue,
+        paydayDate: parseInt(payday) || 1,
         updatedAt: Date.now()
       }, { merge: true });
       
@@ -71,6 +75,22 @@ export const BudgetModal: React.FC<Props> = ({ isOpen, onClose, currentBudget })
             />
             <p className="text-xs text-muted-foreground mt-1">
               กำหนดงบประมาณที่คุณต้องการควบคุมไม่ให้รายจ่ายเกินเป้าในแต่ละเดือน
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>วันที่เงินเดือนออก (1-31)</Label>
+            <Input
+              type="number"
+              min="1"
+              max="31"
+              placeholder="ตัวอย่าง: 25"
+              value={payday}
+              onChange={(e) => setPayday(e.target.value)}
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              เพื่อนำไปใช้คำนวณรอบบิลและเป้าหมายรายวันได้ถูกต้อง
             </p>
           </div>
 

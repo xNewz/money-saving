@@ -4,11 +4,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import type { Transaction } from "@/types";
+import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
+import type { Transaction, UserSettings } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, AlertTriangle, TrendingUp, TrendingDown, Lightbulb, Brain, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Sparkles, AlertTriangle, TrendingUp, TrendingDown, Lightbulb, Brain, CheckCircle2, Target } from "lucide-react";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -43,6 +43,7 @@ export default function Insights() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
 
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -60,8 +61,18 @@ export default function Insights() {
       setLoadingData(false);
     });
 
+    // Fetch Settings (Budget)
+    const unsubSettings = onSnapshot(doc(db, "settings", user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setUserSettings({ id: docSnap.id, ...docSnap.data() } as UserSettings);
+      } else {
+        setUserSettings(null);
+      }
+    });
+
     return () => {
       unsubTxs();
+      unsubSettings();
     };
   }, [user]);
 
@@ -69,11 +80,30 @@ export default function Insights() {
   const { chartData, alerts, currentMonthTotal, lastMonthTotal } = useMemo(() => {
     if (transactions.length === 0) return { chartData: [], alerts: [], currentMonthTotal: 0, lastMonthTotal: 0 };
 
-    const targetMonthDate = new Date(selectedYear, selectedMonth, 1);
-    const lastMonthDate = subMonths(targetMonthDate, 1);
+    const paydayDate = userSettings?.paydayDate || 1;
+    const monthOffset = paydayDate > 15 ? -1 : 0;
+    
+    // Current Cycle
+    const cycleStartDate = new Date(selectedYear, selectedMonth + monthOffset, paydayDate);
+    const cycleEndDate = new Date(selectedYear, selectedMonth + monthOffset + 1, paydayDate - 1);
+    cycleEndDate.setHours(23, 59, 59, 999);
 
-    const currentMonthTxs = transactions.filter(t => t.type === 'expense' && isSameMonth(new Date(t.date), targetMonthDate));
-    const lastMonthTxs = transactions.filter(t => t.type === 'expense' && isSameMonth(new Date(t.date), lastMonthDate));
+    // Last Cycle
+    const lastCycleStartDate = new Date(selectedYear, selectedMonth + monthOffset - 1, paydayDate);
+    const lastCycleEndDate = new Date(selectedYear, selectedMonth + monthOffset, paydayDate - 1);
+    lastCycleEndDate.setHours(23, 59, 59, 999);
+
+    const currentMonthTxs = transactions.filter(t => {
+      if (t.type !== 'expense') return false;
+      const d = new Date(t.date);
+      return d >= cycleStartDate && d <= cycleEndDate;
+    });
+
+    const lastMonthTxs = transactions.filter(t => {
+      if (t.type !== 'expense') return false;
+      const d = new Date(t.date);
+      return d >= lastCycleStartDate && d <= lastCycleEndDate;
+    });
 
     let currentTotal = 0;
     let lastTotal = 0;
@@ -178,13 +208,59 @@ export default function Insights() {
           });
     }
 
+    // Rule 4: Daily Budget (Only for current month and if budget is set)
+    const today = new Date();
+    const isCurrentMonth = today >= cycleStartDate && today <= cycleEndDate;
+    const budget = userSettings?.monthlyBudget || 0;
+
+    if (isCurrentMonth && budget > 0) {
+      const daysInMonth = Math.round((cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      const todayStart = new Date(today);
+      todayStart.setHours(0, 0, 0, 0);
+      const daysLeft = Math.round((cycleEndDate.getTime() - todayStart.getTime()) / 86400000);
+      
+      const remainingBudget = budget - currentTotal;
+
+      if (remainingBudget < 0) {
+        newAlerts.unshift({
+          id: 'budget_exceeded',
+          type: 'warning',
+          title: 'เตือนภัย: ใช้เงินเกินงบเดือนนี้ไปแล้ว!',
+          message: `คุณใช้เงินเกินงบที่ตั้งไว้ (฿${budget.toLocaleString()}) ไปแล้ว ฿${Math.abs(remainingBudget).toLocaleString()} พยายามงดค่าใช้จ่ายฟุ่มเฟือยด่วน`,
+          icon: <AlertTriangle className="w-5 h-5 text-rose-500" />
+        });
+      } else if (daysLeft > 0) {
+        const recommendedDaily = remainingBudget / daysLeft;
+        const originalDaily = budget / daysInMonth;
+
+        if (recommendedDaily < originalDaily * 0.8) {
+          newAlerts.unshift({
+            id: 'budget_tight',
+            type: 'warning',
+            title: 'ระวัง! คุณใช้เงินเร็วกว่าที่ตั้งเป้าไว้',
+            message: `เพื่อให้เงินพอใช้ถึงสิ้นเดือน (อีก ${daysLeft} วัน) คุณควรใช้เงินไม่เกิน ฿${recommendedDaily.toLocaleString(undefined, {maximumFractionDigits: 0})}/วัน นับจากนี้`,
+            icon: <Target className="w-5 h-5 text-amber-500" />
+          });
+        } else {
+          newAlerts.unshift({
+            id: 'budget_good',
+            type: 'success',
+            title: 'ยอดเยี่ยม! การบริหารงบประมาณอยู่ในเกณฑ์ดี',
+            message: `คุณบริหารเงินได้ดีมาก ในอีก ${daysLeft} วันที่เหลือ คุณสามารถใช้เงินได้ ฿${recommendedDaily.toLocaleString(undefined, {maximumFractionDigits: 0})}/วัน`,
+            icon: <Target className="w-5 h-5 text-emerald-500" />
+          });
+        }
+      }
+    }
+
     return { 
       chartData: chartData.slice(0, 10), // Top 10 categories
       alerts: newAlerts,
       currentMonthTotal: currentTotal,
       lastMonthTotal: lastTotal
     };
-  }, [transactions, selectedMonth, selectedYear]);
+  }, [transactions, selectedMonth, selectedYear, userSettings]);
 
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
