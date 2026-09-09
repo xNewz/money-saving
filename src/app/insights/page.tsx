@@ -13,8 +13,15 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { isSameMonth, subMonths } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Filter } from "lucide-react";
 
 type AlertType = 'warning' | 'success' | 'info';
+
+const MONTHS = [
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+];
 
 interface InsightAlert {
   id: string;
@@ -37,6 +44,10 @@ export default function Insights() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
   useEffect(() => {
     if (!user) return;
 
@@ -58,10 +69,10 @@ export default function Insights() {
   const { chartData, alerts, currentMonthTotal, lastMonthTotal } = useMemo(() => {
     if (transactions.length === 0) return { chartData: [], alerts: [], currentMonthTotal: 0, lastMonthTotal: 0 };
 
-    const today = new Date();
-    const lastMonthDate = subMonths(today, 1);
+    const targetMonthDate = new Date(selectedYear, selectedMonth, 1);
+    const lastMonthDate = subMonths(targetMonthDate, 1);
 
-    const currentMonthTxs = transactions.filter(t => t.type === 'expense' && isSameMonth(new Date(t.date), today));
+    const currentMonthTxs = transactions.filter(t => t.type === 'expense' && isSameMonth(new Date(t.date), targetMonthDate));
     const lastMonthTxs = transactions.filter(t => t.type === 'expense' && isSameMonth(new Date(t.date), lastMonthDate));
 
     let currentTotal = 0;
@@ -173,7 +184,7 @@ export default function Insights() {
       currentMonthTotal: currentTotal,
       lastMonthTotal: lastTotal
     };
-  }, [transactions]);
+  }, [transactions, selectedMonth, selectedYear]);
 
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -212,7 +223,27 @@ export default function Insights() {
               <p className="text-muted-foreground text-sm font-medium">AI Insights & Analytics Dashboard</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap justify-end">
+            <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
+              <SelectTrigger className="w-[110px] h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-xl font-medium hidden sm:flex">
+                <SelectValue placeholder="เดือน" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {MONTHS.map((m, i) => (
+                  <SelectItem key={i} value={i.toString()} className="rounded-lg">{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
+              <SelectTrigger className="w-[85px] h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-xl font-medium hidden sm:flex">
+                <SelectValue placeholder="ปี" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {YEARS.map(y => (
+                  <SelectItem key={y} value={y.toString()} className="rounded-lg">{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <ModeToggle />
           </div>
         </header>

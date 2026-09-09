@@ -57,6 +57,19 @@ export default function Dashboard() {
   
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tableDateFilter, setTableDateFilter] = useState<number | 'all'>(new Date().getDate());
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    const today = new Date();
+    if (selectedMonth === today.getMonth() && selectedYear === today.getFullYear()) {
+      setTableDateFilter(today.getDate());
+    } else {
+      setTableDateFilter('all');
+    }
+    setCurrentPage(1);
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
     if (!user) return;
@@ -133,6 +146,15 @@ export default function Dashboard() {
     return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
   });
 
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
+  const transactionsForTable = tableDateFilter === 'all' 
+    ? filteredTransactions 
+    : filteredTransactions.filter(t => new Date(t.date).getDate() === tableDateFilter);
+
+  const paginatedTransactions = transactionsForTable.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(transactionsForTable.length / ITEMS_PER_PAGE);
+
   const totalIncome = filteredTransactions
     .filter((t) => t.type === "income")
     .reduce((acc, t) => acc + t.amount, 0);
@@ -184,7 +206,6 @@ export default function Dashboard() {
   const debtExp = expensesByBucket["เงินผ่อนหนี้"] || 0;
   const netBalanceMonthly = totalIncome - (fixedExp + variableExp + savingExp + debtExp);
 
-  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
     return { day: i + 1, income: 0, expense: 0 };
   });
@@ -750,8 +771,21 @@ export default function Dashboard() {
         {/* Transactions List */}
         <section>
           <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-muted/50 py-4 flex flex-row justify-between items-center space-y-0">
+            <CardHeader className="bg-muted/30 border-b border-muted/50 py-3 px-4 sm:px-6 flex flex-row justify-between items-center space-y-0">
               <CardTitle className="text-base font-semibold">รายการธุรกรรมล่าสุด</CardTitle>
+              <Select value={tableDateFilter.toString()} onValueChange={(val) => { setTableDateFilter(val === 'all' ? 'all' : parseInt(val)); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[125px] h-8 text-xs border border-muted/50 shadow-sm bg-background hover:bg-muted/50 rounded-full font-medium">
+                  <SelectValue placeholder="วันที่" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl max-h-[200px]">
+                  <SelectItem value="all" className="rounded-lg text-xs">ทั้งหมด (เดือนนี้)</SelectItem>
+                  {Array.from({ length: daysInMonth }, (_, i) => (
+                    <SelectItem key={i + 1} value={(i + 1).toString()} className="rounded-lg text-xs">
+                      วันที่ {i + 1}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardHeader>
             <CardContent className="p-0">
               {loadingTxs ? (
@@ -762,7 +796,7 @@ export default function Dashboard() {
                 </div>
               ) : filteredTransactions.length > 0 ? (
                 <div className="divide-y divide-muted/50">
-                  {filteredTransactions.map((tx) => {
+                  {paginatedTransactions.map((tx) => {
                     const acc = accounts.find(a => a.id === tx.accountId);
                     const toAcc = accounts.find(a => a.id === tx.toAccountId);
                     const isIncome = tx.type === 'income';
@@ -835,13 +869,20 @@ export default function Dashboard() {
                       </div>
                     );
                   })}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 py-4 bg-muted/10">
+                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-full hover:bg-muted/50">ก่อนหน้า</Button>
+                      <span className="text-sm font-medium text-muted-foreground">หน้า {currentPage} จาก {totalPages}</span>
+                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-full hover:bg-muted/50">ถัดไป</Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground flex flex-col items-center">
                   <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                     <TrendingDown className="w-8 h-8 opacity-40" />
                   </div>
-                  <p className="mb-2 font-medium text-foreground">ไม่พบรายการธุรกรรมในเดือนนี้</p>
+                  <p className="mb-2 font-medium text-foreground">ไม่พบรายการธุรกรรมใน{tableDateFilter === 'all' ? 'เดือนนี้' : `วันที่ ${tableDateFilter}`}</p>
                   <p className="text-sm">เพิ่มรายการแรกของคุณเพื่อเริ่มต้นติดตามการใช้จ่าย</p>
                   {accounts.length === 0 && (
                     <p className="text-sm text-destructive mt-2">กรุณาสร้างบัญชีก่อนเพิ่มรายการธุรกรรม</p>
