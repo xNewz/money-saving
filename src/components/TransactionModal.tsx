@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account } from "@/types";
+import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account, type Debt } from "@/types";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -33,7 +33,20 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   const [toAccountId, setToAccountId] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [note, setNote] = useState("");
+  const [debtId, setDebtId] = useState("");
+  const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, "debts"), where("userId", "==", user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const d: Debt[] = [];
+      snapshot.forEach(doc => d.push({ id: doc.id, ...doc.data() } as Debt));
+      setDebts(d);
+    });
+    return () => unsub();
+  }, [user]);
 
   useEffect(() => {
     if (existingTransaction) {
@@ -44,6 +57,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setNote(existingTransaction.note || "");
       setAccountId(existingTransaction.accountId || "");
       setToAccountId(existingTransaction.toAccountId || "");
+      setDebtId(existingTransaction.debtId || "");
     } else {
       setType("expense");
       setAmount("");
@@ -51,6 +65,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setDate(format(new Date(), "yyyy-MM-dd"));
       setNote("");
       setToAccountId("");
+      setDebtId("");
       if (accounts.length > 0 && !accountId) {
         setAccountId(accounts[0].id);
       }
@@ -92,6 +107,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
         category: type === "transfer" ? "โอนเงิน" : category,
         date,
         note,
+        debtId: EXPENSE_CATEGORY_GROUPS["เงินผ่อนหนี้"].includes(category) && debtId ? debtId : null,
       };
 
       if (existingTransaction) {
@@ -231,6 +247,28 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                       </SelectItem>
                     ))
                   )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {type === "expense" && EXPENSE_CATEGORY_GROUPS["เงินผ่อนหนี้"].includes(category) && debts.length > 0 && (
+            <div className="space-y-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <Label className="text-primary font-medium">ผูกกับหนี้สินก้อนไหน?</Label>
+              <Select value={debtId} onValueChange={setDebtId}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="เลือกหนี้สิน (ไม่บังคับ)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">ไม่ระบุ</SelectItem>
+                  {debts.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+                        <span>{d.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

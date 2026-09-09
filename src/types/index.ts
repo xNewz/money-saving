@@ -9,11 +9,24 @@ export interface Account {
   createdAt: number;
 }
 
+export interface Debt {
+  id: string;
+  userId: string;
+  name: string;
+  totalAmount: number;
+  remainingAmount: number;
+  interestRate?: number;
+  dueDate?: number; // 1-31 for day of month
+  color: string;
+  createdAt: number;
+}
+
 export interface Transaction {
   id: string;
   userId: string;
   accountId?: string;
   toAccountId?: string;
+  debtId?: string;
   amount: number;
   type: TransactionType;
   category: string;

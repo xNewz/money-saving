@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
-import type { Transaction, Account, UserSettings } from "@/types";
+import type { Transaction, Account, UserSettings, Debt } from "@/types";
 import { EXPENSE_CATEGORY_GROUPS } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ export default function Dashboard() {
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -99,6 +100,17 @@ export default function Dashboard() {
       toast.error("กำลังเตรียมฐานข้อมูล บัญชีของคุณจะปรากฏขึ้นในไม่ช้า");
     });
 
+    // Fetch Debts
+    const qDebts = query(
+      collection(db, "debts"),
+      where("userId", "==", user.uid)
+    );
+    const unsubDebts = onSnapshot(qDebts, (snapshot) => {
+      const d: Debt[] = [];
+      snapshot.forEach((doc) => d.push({ id: doc.id, ...doc.data() } as Debt));
+      setDebts(d);
+    });
+
     // Fetch Settings (Budget)
     const unsubSettings = onSnapshot(doc(db, "settings", user.uid), (docSnap) => {
       if (docSnap.exists()) {
@@ -112,6 +124,7 @@ export default function Dashboard() {
       unsubTxs();
       unsubAccs();
       unsubSettings();
+      unsubDebts();
     };
   }, [user]);
 
@@ -132,6 +145,12 @@ export default function Dashboard() {
   const allTimeExpense = transactions.filter(t => t.type === "expense").reduce((acc, t) => acc + t.amount, 0);
   const totalInitialBalances = accounts.reduce((acc, a) => acc + a.initialBalance, 0);
   const overallBalance = totalInitialBalances + allTimeIncome - allTimeExpense;
+
+  const totalOutstandingDebt = debts.reduce((sum, d) => {
+    const paidTxs = transactions.filter(t => t.debtId === d.id && t.type === "expense");
+    const totalPaid = paidTxs.reduce((acc, t) => acc + t.amount, 0);
+    return sum + Math.max(0, d.remainingAmount - totalPaid);
+  }, 0);
 
   const expensesByCategory = filteredTransactions
     .filter(t => t.type === 'expense')
@@ -346,6 +365,10 @@ export default function Dashboard() {
                   <BarChart2 className="w-4 h-4 mr-2" />
                   <span>รายงานเชิงลึก</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/debts")} className="rounded-lg cursor-pointer py-2.5">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  <span>จัดการหนี้สิน</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/tax")} className="rounded-lg cursor-pointer py-2.5">
                   <Calculator className="w-4 h-4 mr-2" />
                   <span>คำนวณภาษี</span>
@@ -479,7 +502,7 @@ export default function Dashboard() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-primary">ยอดเงินคงเหลือรวม</CardTitle>
@@ -493,6 +516,24 @@ export default function Dashboard() {
                 ) : (
                   <div className={`text-3xl font-bold tracking-tight ${overallBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                     ฿{overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-500">ยอดหนี้คงเหลือรวม</CardTitle>
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingTxs ? (
+                  <Skeleton className="h-8 w-1/2" />
+                ) : (
+                  <div className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">
+                    ฿{totalOutstandingDebt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 )}
               </CardContent>
@@ -554,7 +595,7 @@ export default function Dashboard() {
                   <span className="text-muted-foreground">-</span>
                   <span className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg whitespace-nowrap">ออม/ลงทุน ฿{savingExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                   <span className="text-muted-foreground">-</span>
-                  <span className="px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg whitespace-nowrap">ผ่อนหนี้ ฿{debtExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  <span className="px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg whitespace-nowrap">จ่ายหนี้ ฿{debtExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                   <span className="text-muted-foreground font-bold">=</span>
                   <span className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap shadow-sm ${netBalanceMonthly >= 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
                     สุทธิ ฿{netBalanceMonthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
