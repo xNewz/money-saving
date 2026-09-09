@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account, type Debt } from "@/types";
+import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type Transaction, type Account, type Debt, type Goal } from "@/types";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, updateDoc, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +35,8 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   const [note, setNote] = useState("");
   const [debtId, setDebtId] = useState("");
   const [debts, setDebts] = useState<Debt[]>([]);
+  const [goalId, setGoalId] = useState("");
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,7 +47,18 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       snapshot.forEach(doc => d.push({ id: doc.id, ...doc.data() } as Debt));
       setDebts(d);
     });
-    return () => unsub();
+    
+    const qGoals = query(collection(db, "goals"), where("userId", "==", user.uid));
+    const unsubGoals = onSnapshot(qGoals, (snapshot) => {
+      const g: Goal[] = [];
+      snapshot.forEach(doc => g.push({ id: doc.id, ...doc.data() } as Goal));
+      setGoals(g);
+    });
+
+    return () => {
+      unsub();
+      unsubGoals();
+    };
   }, [user]);
 
   useEffect(() => {
@@ -58,6 +71,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setAccountId(existingTransaction.accountId || "");
       setToAccountId(existingTransaction.toAccountId || "");
       setDebtId(existingTransaction.debtId || "");
+      setGoalId(existingTransaction.goalId || "");
     } else {
       setType("expense");
       setAmount("");
@@ -66,6 +80,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setNote("");
       setToAccountId("");
       setDebtId("");
+      setGoalId("");
       if (accounts.length > 0 && !accountId) {
         setAccountId(accounts[0].id);
       }
@@ -108,6 +123,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
         date,
         note,
         debtId: EXPENSE_CATEGORY_GROUPS["เงินผ่อนหนี้"].includes(category) && debtId ? debtId : null,
+        goalId: category === "เงินออม" && goalId ? goalId : null,
       };
 
       if (existingTransaction) {
@@ -266,6 +282,28 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
                         <span>{d.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {type === "expense" && category === "เงินออม" && goals.length > 0 && (
+            <div className="space-y-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+              <Label className="text-emerald-600 dark:text-emerald-500 font-medium">ผูกกับเป้าหมายออมเงิน?</Label>
+              <Select value={goalId} onValueChange={setGoalId}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="เลือกเป้าหมาย (ไม่บังคับ)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">ไม่ระบุ</SelectItem>
+                  {goals.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: g.color }} />
+                        <span>{g.name}</span>
                       </div>
                     </SelectItem>
                   ))}

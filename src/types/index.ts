@@ -21,12 +21,25 @@ export interface Debt {
   createdAt: number;
 }
 
+export interface Goal {
+  id: string;
+  userId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: string; // YYYY-MM-DD
+  color: string;
+  icon?: string;
+  createdAt: number;
+}
+
 export interface Transaction {
   id: string;
   userId: string;
   accountId?: string;
   toAccountId?: string;
   debtId?: string;
+  goalId?: string;
   amount: number;
   type: TransactionType;
   category: string;

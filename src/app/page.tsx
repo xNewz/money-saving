@@ -365,6 +365,10 @@ export default function Dashboard() {
                   <BarChart2 className="w-4 h-4 mr-2" />
                   <span>รายงานเชิงลึก</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/goals")} className="rounded-lg cursor-pointer py-2.5">
+                  <Target className="w-4 h-4 mr-2" />
+                  <span>เป้าหมายการออม</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/debts")} className="rounded-lg cursor-pointer py-2.5">
                   <CreditCard className="w-4 h-4 mr-2" />
                   <span>จัดการหนี้สิน</span>
