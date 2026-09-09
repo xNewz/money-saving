@@ -199,7 +199,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกบัญชี" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px]">
                     {accounts.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
                         <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                     <SelectTrigger>
                       <SelectValue placeholder="เลือกบัญชี" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px]">
                       {accounts.map((acc) => (
                         <SelectItem key={acc.id} value={acc.id} disabled={acc.id === accountId}>
                           <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                 <SelectTrigger>
                   <SelectValue placeholder="เลือกหมวดหมู่" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   {type === "expense" ? (
                     Object.entries(EXPENSE_CATEGORY_GROUPS).map(([group, cats]) => (
                       <SelectGroup key={group}>
@@ -275,7 +275,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="เลือกหนี้สิน (ไม่บังคับ)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   <SelectItem value="none">ไม่ระบุ</SelectItem>
                   {debts.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
@@ -297,7 +297,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="เลือกเป้าหมาย (ไม่บังคับ)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   <SelectItem value="none">ไม่ระบุ</SelectItem>
                   {goals.map((g) => (
                     <SelectItem key={g.id} value={g.id}>
