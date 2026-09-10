@@ -922,7 +922,7 @@ export default function Dashboard() {
                           
                           <div className="flex flex-col min-w-0">
                             <span className="font-semibold text-foreground tracking-tight truncate">
-                              {isTransfer ? 'โอนเงิน' : tx.category}
+                              {isTransfer ? 'โอนเงิน' : ((tx.category === 'ให้ยืม' || tx.category === 'ได้รับคืน') && tx.note) ? `${tx.category}: ${tx.note}` : tx.category}
                             </span>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               {isTransfer ? (
