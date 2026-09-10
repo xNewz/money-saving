@@ -39,7 +39,9 @@ export default function Reports() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [viewMode, setViewMode] = useState<"yearly" | "monthly">("yearly");
 
   useEffect(() => {
     if (!user) return;
@@ -70,7 +72,7 @@ export default function Reports() {
   }, [user]);
 
   // Aggregate Data
-  const { yearlyData, topExpenses, totalYearIncome, totalYearExpense, groupMap } = useMemo(() => {
+  const { yearlyData, topExpenses, totalYearIncome, totalYearExpense, groupMap, sortedIncomeCategories, sortedExpenseCategories } = useMemo(() => {
     const data = Array.from({ length: 12 }, (_, i) => ({
       month: MONTHS[i],
       income: 0,
@@ -79,7 +81,8 @@ export default function Reports() {
       monthIndex: i
     }));
 
-    const categoryMap: Record<string, number> = {};
+    const incomeCategoryMap: Record<string, number> = {};
+    const expenseCategoryMap: Record<string, number> = {};
     const groupMap: Record<string, number> = {
       "รายจ่ายคงที่": 0,
       "รายจ่ายผันแปร": 0,
@@ -92,24 +95,33 @@ export default function Reports() {
       cats.forEach(c => categoryToGroup[c] = group);
     });
 
-    let yearIncome = 0;
-    let yearExpense = 0;
+    let periodIncome = 0;
+    let periodExpense = 0;
 
     transactions.forEach(tx => {
       const date = new Date(tx.date);
-      if (date.getFullYear() === selectedYear && tx.type !== "transfer") {
-        const m = date.getMonth();
+      
+      const isMatch = viewMode === 'yearly' 
+        ? date.getFullYear() === selectedYear 
+        : date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
+
+      if (isMatch && tx.type !== "transfer") {
         if (tx.type === "income") {
-          data[m].income += tx.amount;
-          yearIncome += tx.amount;
+          periodIncome += tx.amount;
+          incomeCategoryMap[tx.category] = (incomeCategoryMap[tx.category] || 0) + tx.amount;
         } else if (tx.type === "expense") {
-          data[m].expense += tx.amount;
-          yearExpense += tx.amount;
+          periodExpense += tx.amount;
+          expenseCategoryMap[tx.category] = (expenseCategoryMap[tx.category] || 0) + tx.amount;
           
-          categoryMap[tx.category] = (categoryMap[tx.category] || 0) + tx.amount;
           const group = categoryToGroup[tx.category] || "รายจ่ายผันแปร";
           groupMap[group] += tx.amount;
         }
+      }
+
+      if (date.getFullYear() === selectedYear && tx.type !== "transfer") {
+        const m = date.getMonth();
+        if (tx.type === "income") data[m].income += tx.amount;
+        if (tx.type === "expense") data[m].expense += tx.amount;
       }
     });
 
@@ -118,20 +130,24 @@ export default function Reports() {
       d.balance = d.income - d.expense;
     });
 
-    // Sort categories
-    const sortedCategories = Object.keys(categoryMap)
-      .map(cat => ({ name: cat, value: categoryMap[cat] }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Top 5
+    const sortedIncomeCategories = Object.keys(incomeCategoryMap)
+      .map(cat => ({ name: cat, value: incomeCategoryMap[cat] }))
+      .sort((a, b) => b.value - a.value);
+
+    const sortedExpenseCategories = Object.keys(expenseCategoryMap)
+      .map(cat => ({ name: cat, value: expenseCategoryMap[cat] }))
+      .sort((a, b) => b.value - a.value);
 
     return { 
       yearlyData: data, 
-      topExpenses: sortedCategories,
-      totalYearIncome: yearIncome,
-      totalYearExpense: yearExpense,
-      groupMap
+      topExpenses: sortedExpenseCategories.slice(0, 5),
+      totalYearIncome: periodIncome,
+      totalYearExpense: periodExpense,
+      groupMap,
+      sortedIncomeCategories,
+      sortedExpenseCategories
     };
-  }, [transactions, selectedYear]);
+  }, [transactions, selectedYear, selectedMonth, viewMode]);
 
   const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
@@ -156,10 +172,28 @@ export default function Reports() {
               <p className="text-muted-foreground text-sm font-medium">ภาพรวมรายปีและการวิเคราะห์</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap justify-end">
+            <div className="hidden sm:flex bg-muted/50 p-1 rounded-xl mr-1">
+              <Button size="sm" variant={viewMode === 'monthly' ? 'default' : 'ghost'} onClick={() => setViewMode('monthly')} className="rounded-lg h-8 text-xs font-medium">รายเดือน</Button>
+              <Button size="sm" variant={viewMode === 'yearly' ? 'default' : 'ghost'} onClick={() => setViewMode('yearly')} className="rounded-lg h-8 text-xs font-medium">รายปี</Button>
+            </div>
+            
+            {viewMode === 'monthly' && (
+              <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
+                <SelectTrigger className="w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-xl font-medium">
+                  <SelectValue placeholder="เดือน" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {MONTHS.map((m, i) => (
+                    <SelectItem key={i} value={i.toString()} className="rounded-lg">{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-              <SelectTrigger className="w-[100px] border shadow-sm bg-card hover:bg-muted/50 rounded-xl font-medium">
-                <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectTrigger className="w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-xl font-medium">
+                <Calendar className="w-4 h-4 mr-2 text-muted-foreground hidden sm:block" />
                 <SelectValue placeholder="ปี" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -176,7 +210,7 @@ export default function Reports() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 shadow-sm rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-600 dark:text-emerald-500">รายรับรวมปี {selectedYear}</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-600 dark:text-emerald-500">รายรับรวม{viewMode === 'yearly' ? `ปี ${selectedYear}` : `${MONTHS[selectedMonth]} ${selectedYear}`}</CardTitle>
               <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
             </CardHeader>
             <CardContent>
@@ -190,7 +224,7 @@ export default function Reports() {
 
           <Card className="bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent border-destructive/20 shadow-sm rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-destructive">รายจ่ายรวมปี {selectedYear}</CardTitle>
+              <CardTitle className="text-sm font-medium text-destructive">รายจ่ายรวม{viewMode === 'yearly' ? `ปี ${selectedYear}` : `${MONTHS[selectedMonth]} ${selectedYear}`}</CardTitle>
               <TrendingDown className="w-4 h-4 text-destructive" />
             </CardHeader>
             <CardContent>
@@ -223,7 +257,7 @@ export default function Reports() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
-                สรุปเงินคงเหลือสุทธิ (รวมตลอดปี {selectedYear})
+                สรุปเงินคงเหลือสุทธิ (รวมตลอด{viewMode === 'yearly' ? `ปี ${selectedYear}` : `เดือน ${MONTHS[selectedMonth]} ${selectedYear}`})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -348,6 +382,69 @@ export default function Reports() {
                       <Area type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
                     </AreaChart>
                   </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Category Breakdowns */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="rounded-2xl shadow-sm border-muted/50">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-emerald-600 dark:text-emerald-500">รายรับตามหมวดหมู่</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingData ? <Skeleton className="h-[200px] w-full" /> : sortedIncomeCategories.length > 0 ? (
+                <div className="space-y-4">
+                  {sortedIncomeCategories.map((item, idx) => (
+                    <div key={idx} className="flex flex-col gap-1">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-medium truncate">{item.name}</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-500">+฿{item.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                      </div>
+                      <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-emerald-500/80 h-full rounded-full transition-all duration-500" 
+                          style={{ width: `${totalYearIncome > 0 ? (item.value / totalYearIncome) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <p>ไม่มีรายรับใน{viewMode === 'yearly' ? 'ปี' : 'เดือน'}นี้</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl shadow-sm border-muted/50">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-destructive">รายจ่ายตามหมวดหมู่</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingData ? <Skeleton className="h-[200px] w-full" /> : sortedExpenseCategories.length > 0 ? (
+                <div className="space-y-4">
+                  {sortedExpenseCategories.map((item, idx) => (
+                    <div key={idx} className="flex flex-col gap-1">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-medium truncate">{item.name}</span>
+                        <span className="font-bold text-destructive">-฿{item.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                      </div>
+                      <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-destructive/80 h-full rounded-full transition-all duration-500" 
+                          style={{ width: `${totalYearExpense > 0 ? (item.value / totalYearExpense) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <p>ไม่มีรายจ่ายใน{viewMode === 'yearly' ? 'ปี' : 'เดือน'}นี้</p>
                 </div>
               )}
             </CardContent>
