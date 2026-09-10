@@ -9,7 +9,7 @@ import type { Transaction, Account } from "@/types";
 import { EXPENSE_CATEGORY_GROUPS } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, TrendingDown, Wallet, Calendar, PieChart as PieChartIcon, Target } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Wallet, Calendar, PieChart as PieChartIcon, Target, Users, Clock } from "lucide-react";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -149,6 +149,32 @@ export default function Reports() {
     };
   }, [transactions, selectedYear, selectedMonth, viewMode]);
 
+  const outstandingLends = useMemo(() => {
+    const lentOutBalances: Record<string, { totalLent: number, totalReceived: number, balance: number, latestDate: string }> = {};
+
+    transactions.forEach(t => {
+      if (t.type === 'expense' && t.category === 'ให้ยืม') {
+        const key = t.note?.trim() || 'ไม่ระบุ';
+        if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0, balance: 0, latestDate: t.date };
+        lentOutBalances[key].totalLent += t.amount;
+        if (new Date(t.date) > new Date(lentOutBalances[key].latestDate)) {
+            lentOutBalances[key].latestDate = t.date;
+        }
+      } else if (t.type === 'income' && t.category === 'ได้รับคืน') {
+        const key = t.note?.trim() || 'ไม่ระบุ';
+        if (!lentOutBalances[key]) {
+            lentOutBalances[key] = { totalLent: 0, totalReceived: 0, balance: 0, latestDate: t.date };
+        }
+        lentOutBalances[key].totalReceived += t.amount;
+      }
+    });
+
+    return Object.entries(lentOutBalances)
+      .map(([note, data]) => ({ note, ...data, balance: data.totalLent - data.totalReceived }))
+      .filter(item => item.balance > 0)
+      .sort((a, b) => b.balance - a.balance);
+  }, [transactions]);
+
   const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   if (loading || !user) {
@@ -283,6 +309,42 @@ export default function Reports() {
             </CardContent>
           </Card>
         </section>
+
+        {/* Outstanding Lends Section */}
+        {outstandingLends.length > 0 && (
+          <section>
+            <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-violet-500" />
+                  </div>
+                  รายการให้ยืมที่ยังไม่ได้รับคืน (ยอดคงค้างทั้งหมด)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {outstandingLends.map(lend => (
+                    <div key={lend.note} className="flex justify-between items-center bg-background p-4 rounded-xl border border-muted/50 shadow-sm">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-sm">{lend.note}</span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="w-3 h-3" /> ยืมล่าสุด: {format(new Date(lend.latestDate), "d MMM yyyy")}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="font-bold text-violet-500 text-base">฿{lend.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                        <span className="text-[10px] text-muted-foreground mt-1">
+                          (ให้ยืม {lend.totalLent.toLocaleString()} / คืนแล้ว {lend.totalReceived.toLocaleString()})
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* Charts Section */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">

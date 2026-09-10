@@ -37,6 +37,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   const [debts, setDebts] = useState<Debt[]>([]);
   const [goalId, setGoalId] = useState("");
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [outstandingLends, setOutstandingLends] = useState<{note: string, balance: number}[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -55,9 +56,32 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setGoals(g);
     });
 
+    const qTxs = query(collection(db, "transactions"), where("userId", "==", user.uid));
+    const unsubTxs = onSnapshot(qTxs, (snapshot) => {
+      const lentOutBalances: Record<string, { totalLent: number, totalReceived: number }> = {};
+      snapshot.forEach(docSnap => {
+        const t = docSnap.data() as Transaction;
+        if (t.type === 'expense' && t.category === 'ให้ยืม') {
+            const key = t.note?.trim() || 'ไม่ระบุ';
+            if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0 };
+            lentOutBalances[key].totalLent += t.amount;
+        } else if (t.type === 'income' && t.category === 'ได้รับคืน') {
+            const key = t.note?.trim() || 'ไม่ระบุ';
+            if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0 };
+            lentOutBalances[key].totalReceived += t.amount;
+        }
+      });
+      const outstanding = Object.entries(lentOutBalances)
+        .map(([note, data]) => ({ note, balance: data.totalLent - data.totalReceived }))
+        .filter(item => item.balance > 0)
+        .sort((a, b) => b.balance - a.balance);
+      setOutstandingLends(outstanding);
+    });
+
     return () => {
       unsub();
       unsubGoals();
+      unsubTxs();
     };
   }, [user]);
 
@@ -330,14 +354,51 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>บันทึกช่วยจำ (ไม่บังคับ)</Label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="เพิ่มรายละเอียด..."
-            />
-          </div>
+          {type === "income" && category === "ได้รับคืน" && outstandingLends.length > 0 ? (
+            <div className="space-y-2 p-3 bg-violet-500/5 border border-violet-500/20 rounded-lg">
+              <Label className="text-violet-600 dark:text-violet-500 font-medium">ได้รับคืนจากใคร?</Label>
+              <Select 
+                value={outstandingLends.some(l => l.note === note) ? note : "new"} 
+                onValueChange={(val) => {
+                  if (val === "new") {
+                    setNote("");
+                  } else {
+                    setNote(val);
+                  }
+                }}
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="เลือกรายการที่ให้ยืม" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {outstandingLends.map(lend => (
+                    <SelectItem key={lend.note} value={lend.note}>
+                      {lend.note} (ค้าง ฿{lend.balance.toLocaleString()})
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="new">อื่น ๆ (พิมพ์เอง)</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {(!outstandingLends.some(l => l.note === note)) && (
+                <Input
+                  className="mt-2"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="พิมพ์ชื่อหรือรายละเอียด..."
+                />
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>บันทึกช่วยจำ (ไม่บังคับ)</Label>
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="เพิ่มรายละเอียด..."
+              />
+            </div>
+          )}
 
           <div className="pt-4 flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
