@@ -44,5 +44,14 @@ service cloud.firestore {
                     && request.auth.uid == 'aWBhtKFUOiMG2hnm4AgFhkA1BWI3'
                     && request.resource.data.userId == request.auth.uid;
     }
+
+    match /subscriptions/{subscriptionId} {
+      allow read, update, delete: if request.auth != null 
+                                  && request.auth.uid == 'aWBhtKFUOiMG2hnm4AgFhkA1BWI3'
+                                  && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null 
+                    && request.auth.uid == 'aWBhtKFUOiMG2hnm4AgFhkA1BWI3'
+                    && request.resource.data.userId == request.auth.uid;
+    }
   }
 }

@@ -49,6 +49,21 @@ export interface Transaction {
   createdAt: number;
 }
 
+export interface Subscription {
+  id: string;
+  userId: string;
+  name: string;
+  amount: number;
+  accountId: string;
+  category: string;
+  cycle: "monthly" | "yearly";
+  nextBillingDate: string; // YYYY-MM-DD
+  isActive: boolean;
+  color: string;
+  icon?: string;
+  createdAt: number;
+}
+
 export const EXPENSE_CATEGORY_GROUPS = {
   "รายจ่ายคงที่": ["สาธารณูปโภค", "ค่าเช่า/ผ่อนบ้าน", "ค่าเน็ต/โทรศัพท์"],
   "รายจ่ายผันแปร": ["อาหาร", "เดินทาง", "บันเทิง", "ช้อปปิ้ง", "สุขภาพ", "อื่นๆ"],

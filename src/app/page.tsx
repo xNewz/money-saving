@@ -4,12 +4,12 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
-import type { Transaction, Account, UserSettings, Debt, Goal } from "@/types";
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, addDoc, updateDoc, getDocs } from "firebase/firestore";
+import type { Transaction, Account, UserSettings, Debt, Goal, Subscription } from "@/types";
 import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
@@ -139,6 +139,66 @@ export default function Dashboard() {
       unsubSettings();
       unsubDebts();
     };
+  }, [user]);
+
+  // Subscription Auto-Processor
+  useEffect(() => {
+    if (!user) return;
+    
+    const processSubscriptions = async () => {
+      try {
+        const qSubs = query(collection(db, "subscriptions"), where("userId", "==", user.uid), where("isActive", "==", true));
+        const querySnapshot = await getDocs(qSubs);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        querySnapshot.forEach(async (docSnap) => {
+          const sub = { id: docSnap.id, ...docSnap.data() } as Subscription;
+          let nextDate = new Date(sub.nextBillingDate);
+          nextDate.setHours(0, 0, 0, 0);
+          
+          let hasUpdates = false;
+          let currentNextDate = nextDate;
+
+          // While the nextBillingDate is today or in the past
+          while (currentNextDate <= today) {
+            hasUpdates = true;
+            
+            // Create transaction
+            await addDoc(collection(db, "transactions"), {
+              userId: user.uid,
+              accountId: sub.accountId,
+              amount: sub.amount,
+              type: "expense",
+              category: sub.category,
+              date: currentNextDate.toISOString(),
+              note: `รายจ่ายประจำ: ${sub.name}`,
+              createdAt: Date.now(),
+            });
+
+            // Calculate next billing date
+            if (sub.cycle === "monthly") {
+              currentNextDate.setMonth(currentNextDate.getMonth() + 1);
+            } else {
+              currentNextDate.setFullYear(currentNextDate.getFullYear() + 1);
+            }
+          }
+
+          if (hasUpdates) {
+            // Update the subscription's next billing date
+            await updateDoc(doc(db, "subscriptions", sub.id), {
+              nextBillingDate: currentNextDate.toISOString().split("T")[0]
+            });
+            toast.success(`หักเงินรายจ่าย ${sub.name} อัตโนมัติ`);
+          }
+        });
+      } catch (error) {
+        console.error("Error processing subscriptions:", error);
+      }
+    };
+
+    processSubscriptions();
   }, [user]);
 
   const paydayDate = userSettings?.paydayDate || 1;
@@ -425,6 +485,10 @@ export default function Dashboard() {
                 <DropdownMenuItem onClick={() => router.push("/goals")} className="rounded-lg cursor-pointer py-2.5">
                   <Target className="w-4 h-4 mr-2" />
                   <span>เป้าหมายการออม</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/subscriptions")} className="rounded-lg cursor-pointer py-2.5">
+                  <MonitorPlay className="w-4 h-4 mr-2" />
+                  <span>รายจ่ายประจำ</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/debts")} className="rounded-lg cursor-pointer py-2.5">
                   <CreditCard className="w-4 h-4 mr-2" />
