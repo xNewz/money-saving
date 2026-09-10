@@ -97,7 +97,7 @@ export const EXTENDED_BANK_LISTS: Record<string, any> = {
     fullname: "กระเป๋าเงินอิเล็กทรอนิกส์",
     nameEN: "E-Wallet",
     symbol: "CUSTOM_WALLET_1",
-    icon: "https://play-lh.googleusercontent.com/P55R06USyrtExssiU1Arb88uToqB8LUYMCl-7XqohLp2norQTRdDdppliIE3n5iwQmM20J6iOWGQGzxMdTuG=w240-h480",
+    icon: "https://play-lh.googleusercontent.com/P55R06USyrtExssiU1Arb88uToqB8LUYMCl-7XqohLp2norQTRdDdppliIE3n5iwQmM20J6iOWGQGzxMdTuG",
     color: "#4f46e5"
   }
 };

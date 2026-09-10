@@ -820,7 +820,8 @@ export default function Dashboard() {
                       </Pie>
                       <Tooltip 
                         formatter={(value: any) => `฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                     </PieChart>
@@ -852,7 +853,8 @@ export default function Dashboard() {
                       <Tooltip 
                         formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
                         labelFormatter={(label) => `วันที่ ${label} ${MONTHS[selectedMonth]}`}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 500 }}
+                        contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 500 }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
                         cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
                       />
                       <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
