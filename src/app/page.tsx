@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
+import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -49,7 +50,9 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | undefined>(undefined);
+  const [transactionToView, setTransactionToView] = useState<Transaction | undefined>(undefined);
   const [accountToEdit, setAccountToEdit] = useState<Account | undefined>(undefined);
   
   const [loadingTxs, setLoadingTxs] = useState(true);
@@ -338,6 +341,11 @@ export default function Dashboard() {
   const handleEditTx = (tx: Transaction) => {
     setTransactionToEdit(tx);
     setIsModalOpen(true);
+  };
+
+  const handleViewTx = (tx: Transaction) => {
+    setTransactionToView(tx);
+    setIsViewModalOpen(true);
   };
 
   const handleCloseTxModal = () => {
@@ -983,10 +991,14 @@ export default function Dashboard() {
                     const isTransfer = tx.type === 'transfer';
                     
                     return (
-                      <div key={tx.id} className="group flex justify-between items-center p-4 sm:px-6 hover:bg-muted/30 transition-colors duration-200 relative">
+                      <div 
+                        key={tx.id} 
+                        onClick={() => handleViewTx(tx)}
+                        className="group flex justify-between items-center p-4 sm:px-6 hover:bg-muted/30 transition-colors duration-200 relative gap-3 sm:gap-4 cursor-pointer"
+                      >
                         {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: isTransfer ? '#3b82f6' : acc.color }} />}
                         
-                        <div className="flex items-center gap-4 flex-1 pl-2">
+                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 pl-2">
                           {/* Category Icon / Initial */}
                           <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
                             isTransfer 
@@ -998,11 +1010,11 @@ export default function Dashboard() {
                             {isTransfer ? <ArrowRightLeft className="w-4 h-4" /> : tx.category.substring(0, 1)}
                           </div>
                           
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex flex-col min-w-0 flex-1">
                             <span className="font-semibold text-foreground tracking-tight truncate">
                               {isTransfer ? 'โอนเงิน' : ((tx.category === 'ให้ยืม' || tx.category === 'ได้รับคืน') && tx.note) ? `${tx.category}: ${tx.note}` : tx.category}
                             </span>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap min-w-0">
                               {isTransfer ? (
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-medium truncate max-w-[120px] sm:max-w-[200px]">
                                   {acc?.name} ➡️ {toAcc?.name}
@@ -1012,7 +1024,7 @@ export default function Dashboard() {
                                   {acc.name}
                                 </span>
                               ) : null}
-                              <span className="text-xs text-muted-foreground font-medium truncate">
+                              <span className="text-xs text-muted-foreground font-medium truncate flex-1 min-w-0">
                                 {format(new Date(tx.date), "d MMM yyyy")} {tx.note && `• ${tx.note}`}
                               </span>
                             </div>
@@ -1032,15 +1044,15 @@ export default function Dashboard() {
                           
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground">
+                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground">
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="rounded-xl">
-                              <DropdownMenuItem onClick={() => handleEditTx(tx)} className="rounded-lg cursor-pointer">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditTx(tx); }} className="rounded-lg cursor-pointer">
                                 <Edit2 className="h-4 w-4 mr-2" /> แก้ไข
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDeleteTx(tx.id)} className="text-destructive focus:text-destructive rounded-lg cursor-pointer">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteTx(tx.id); }} className="text-destructive focus:text-destructive rounded-lg cursor-pointer">
                                 <Trash2 className="h-4 w-4 mr-2" /> ลบ
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1074,15 +1086,22 @@ export default function Dashboard() {
         </section>
       </div>
 
-      <TransactionModal 
-        isOpen={isModalOpen} 
-        onClose={handleCloseTxModal} 
-        existingTransaction={transactionToEdit}
-        accounts={accounts} 
-      />
-      
-      <AccountModal
-        isOpen={isAccountModalOpen}
+        <TransactionModal
+          isOpen={isModalOpen}
+          onClose={handleCloseTxModal}
+          existingTransaction={transactionToEdit}
+          accounts={accounts}
+        />
+        
+        <TransactionDetailsModal
+          isOpen={isViewModalOpen}
+          onClose={() => { setIsViewModalOpen(false); setTimeout(() => setTransactionToView(undefined), 300); }}
+          transaction={transactionToView}
+          accounts={accounts}
+        />
+
+        <AccountModal
+          isOpen={isAccountModalOpen}
         onClose={handleCloseAccountModal}
         existingAccount={accountToEdit}
       />
