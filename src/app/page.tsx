@@ -9,7 +9,7 @@ import type { Transaction, Account, UserSettings, Debt, Goal, Subscription } fro
 import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
@@ -60,6 +60,20 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [tableDateFilter, setTableDateFilter] = useState<number | 'all'>(new Date().getDate());
   const ITEMS_PER_PAGE = 10;
+  const [hideBalance, setHideBalance] = useState<boolean>(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('hideBalance');
+    if (saved) {
+      setHideBalance(saved === 'true');
+    }
+  }, []);
+
+  const toggleHideBalance = () => {
+    const newValue = !hideBalance;
+    setHideBalance(newValue);
+    localStorage.setItem('hideBalance', newValue.toString());
+  };
 
   useEffect(() => {
     const today = new Date();
@@ -478,6 +492,9 @@ export default function Dashboard() {
             <p className="text-muted-foreground text-sm font-medium">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
           </div>
           <div className="flex gap-2 items-center">
+            <Button variant="ghost" size="icon" onClick={toggleHideBalance} className="rounded-full shadow-sm hover:shadow transition-all">
+              {hideBalance ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+            </Button>
             <ModeToggle />
             
             <Button onClick={() => { setAccountToEdit(undefined); setIsAccountModalOpen(true); }} variant="secondary" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
@@ -601,7 +618,7 @@ export default function Dashboard() {
                     </CardHeader>
                     <CardContent className="px-5 pb-5">
                       <div className={`text-2xl font-bold tracking-tight ${bal >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                        ฿{bal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {hideBalance ? '฿***' : `฿${bal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </div>
                     </CardContent>
                   </Card>
@@ -669,7 +686,7 @@ export default function Dashboard() {
                   <Skeleton className="h-8 w-1/2" />
                 ) : (
                   <div className={`text-3xl font-bold tracking-tight ${overallBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                    ฿{overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {hideBalance ? '฿***' : `฿${overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </div>
                 )}
               </CardContent>
@@ -687,7 +704,7 @@ export default function Dashboard() {
                   <Skeleton className="h-8 w-1/2" />
                 ) : (
                   <div className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">
-                    ฿{totalOutstandingDebt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {hideBalance ? '฿***' : `฿${totalOutstandingDebt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </div>
                 )}
               </CardContent>
@@ -705,7 +722,7 @@ export default function Dashboard() {
                   <Skeleton className="h-8 w-1/2" />
                 ) : (
                   <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">
-                    +฿{totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {hideBalance ? '฿***' : `+฿${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </div>
                 )}
               </CardContent>
@@ -723,7 +740,7 @@ export default function Dashboard() {
                   <Skeleton className="h-8 w-1/2" />
                 ) : (
                   <div className="text-3xl font-bold tracking-tight text-destructive">
-                    -฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {hideBalance ? '฿***' : `-฿${totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </div>
                 )}
               </CardContent>
