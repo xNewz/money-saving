@@ -589,11 +589,11 @@ export default function Dashboard() {
           </div>
           
           {loadingAccs ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex gap-4 overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin]">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-64 shrink-0 rounded-2xl" />)}
             </div>
           ) : accounts.length > 0 ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-1 -mx-1">
+            <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] px-1 -mx-1">
               {accounts.map(acc => {
                 const bal = getAccountBalance(acc.id);
                 return (
