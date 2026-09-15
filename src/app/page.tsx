@@ -1104,6 +1104,7 @@ export default function Dashboard() {
           isOpen={isAccountModalOpen}
           onClose={handleCloseAccountModal}
           existingAccount={accountToEdit}
+          currentBalance={accountToEdit ? getAccountBalance(accountToEdit.id) : undefined}
           onDelete={handleDeleteAccount}
         />
 

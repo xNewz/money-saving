@@ -25,6 +25,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   existingAccount?: Account;
+  currentBalance?: number;
   onDelete?: (id: string) => void;
 }
 
@@ -38,10 +39,10 @@ const ACCOUNT_COLORS = [
   "#64748b", // slate-500
 ];
 
-export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount, onDelete }) => {
+export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount, currentBalance, onDelete }) => {
   const { user } = useAuth();
   const [name, setName] = useState("");
-  const [initialBalance, setInitialBalance] = useState("0");
+  const [balanceInput, setBalanceInput] = useState("0");
   const [color, setColor] = useState(ACCOUNT_COLORS[0]);
   const [bankSymbol, setBankSymbol] = useState("none");
   const [loading, setLoading] = useState(false);
@@ -49,16 +50,16 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
   useEffect(() => {
     if (existingAccount) {
       setName(existingAccount.name);
-      setInitialBalance(existingAccount.initialBalance.toString());
+      setBalanceInput(currentBalance !== undefined ? currentBalance.toString() : existingAccount.initialBalance.toString());
       setColor(existingAccount.color);
       setBankSymbol(existingAccount.bankSymbol || "none");
     } else {
       setName("");
-      setInitialBalance("0");
+      setBalanceInput("0");
       setColor(ACCOUNT_COLORS[0]);
       setBankSymbol("none");
     }
-  }, [existingAccount, isOpen]);
+  }, [existingAccount, currentBalance, isOpen]);
 
   const handleBankChange = (val: string) => {
     setBankSymbol(val);
@@ -77,11 +78,18 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
     
     setLoading(true);
     try {
+      let finalInitialBalance = parseFloat(balanceInput) || 0;
+      
+      if (existingAccount && currentBalance !== undefined) {
+        const difference = finalInitialBalance - currentBalance;
+        finalInitialBalance = existingAccount.initialBalance + difference;
+      }
+
       const data = {
         userId: user.uid,
         name,
         bankSymbol: bankSymbol === "none" ? null : bankSymbol,
-        initialBalance: parseFloat(initialBalance) || 0,
+        initialBalance: finalInitialBalance,
         color,
       };
 
@@ -143,13 +151,13 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="initialBalance">ยอดยกมาเริ่มต้น</Label>
+            <Label htmlFor="balanceInput">{existingAccount ? "ยอดเงินคงเหลือปัจจุบัน (แก้ไขเพื่อปรับยอด)" : "ยอดยกมาเริ่มต้น"}</Label>
             <Input
-              id="initialBalance"
+              id="balanceInput"
               type="number"
               step="0.01"
-              value={initialBalance}
-              onChange={(e) => setInitialBalance(e.target.value)}
+              value={balanceInput}
+              onChange={(e) => setBalanceInput(e.target.value)}
               required
             />
           </div>
