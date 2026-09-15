@@ -25,6 +25,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   existingAccount?: Account;
+  onDelete?: (id: string) => void;
 }
 
 const ACCOUNT_COLORS = [
@@ -37,7 +38,7 @@ const ACCOUNT_COLORS = [
   "#64748b", // slate-500
 ];
 
-export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount }) => {
+export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount, onDelete }) => {
   const { user } = useAuth();
   const [name, setName] = useState("");
   const [initialBalance, setInitialBalance] = useState("0");
@@ -168,13 +169,29 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
             </div>
           </div>
 
-          <div className="pt-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              ยกเลิก
-            </Button>
-            <Button type="submit" disabled={loading || !name}>
-              {loading ? "กำลังบันทึก..." : "บันทึกบัญชี"}
-            </Button>
+          <div className="pt-4 flex items-center justify-between gap-2">
+            <div>
+              {existingAccount && onDelete && (
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  onClick={() => {
+                    onDelete(existingAccount.id);
+                    onClose();
+                  }}
+                >
+                  ลบบัญชี
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                ยกเลิก
+              </Button>
+              <Button type="submit" disabled={loading || !name}>
+                {loading ? "กำลังบันทึก..." : "บันทึกบัญชี"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

@@ -610,7 +610,7 @@ export default function Dashboard() {
                       </CardTitle>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                             <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -1102,9 +1102,10 @@ export default function Dashboard() {
 
         <AccountModal
           isOpen={isAccountModalOpen}
-        onClose={handleCloseAccountModal}
-        existingAccount={accountToEdit}
-      />
+          onClose={handleCloseAccountModal}
+          existingAccount={accountToEdit}
+          onDelete={handleDeleteAccount}
+        />
 
       <BudgetModal
         isOpen={isBudgetModalOpen}
