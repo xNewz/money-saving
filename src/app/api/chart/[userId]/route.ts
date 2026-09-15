@@ -89,8 +89,17 @@ export async function GET(
 
     const imageUrl = chart.getUrl();
     
-    // Redirect directly to the image URL, so hitting this endpoint returns an image
-    return NextResponse.redirect(imageUrl);
+    // Fetch the image from QuickChart and return it directly as an image buffer
+    // This prevents redirects which break LINE flex messages
+    const imageResponse = await fetch(imageUrl);
+    const imageBuffer = await imageResponse.arrayBuffer();
+    
+    return new NextResponse(imageBuffer, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
     
   } catch (error: any) {
     console.error("Chart API Error:", error);
