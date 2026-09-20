@@ -9,11 +9,12 @@ import type { Transaction, Account, UserSettings, Debt, Goal, Subscription } fro
 import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS, isLendingExpense, isLendingIncome, isLendingTransaction } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff, History } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
+import { LendingHistoryModal } from "@/components/LendingHistoryModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ModeToggle } from "@/components/ModeToggle";
 import { format } from "date-fns";
@@ -51,6 +52,7 @@ export default function Dashboard() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isLendingHistoryOpen, setIsLendingHistoryOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | undefined>(undefined);
   const [transactionToView, setTransactionToView] = useState<Transaction | undefined>(undefined);
   const [accountToEdit, setAccountToEdit] = useState<Account | undefined>(undefined);
@@ -553,6 +555,10 @@ export default function Dashboard() {
                   <Target className="w-4 h-4 mr-2" />
                   <span>ตั้งงบประมาณ</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsLendingHistoryOpen(true)} className="rounded-lg cursor-pointer py-2.5">
+                  <History className="w-4 h-4 mr-2" />
+                  <span>ประวัติให้ยืม-คืนเงิน</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExport} className="rounded-lg cursor-pointer py-2.5">
                   <Download className="w-4 h-4 mr-2" />
                   <span>ส่งออกข้อมูล (CSV)</span>
@@ -788,13 +794,22 @@ export default function Dashboard() {
           {/* Outstanding Lends */}
           {outstandingLends.length > 0 && (
             <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
                     <Users className="w-4 h-4 text-violet-500" />
                   </div>
                   รายการให้ยืมที่ยังไม่ได้รับคืน
                 </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsLendingHistoryOpen(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground rounded-lg gap-1.5 h-8 px-2.5 font-medium"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>ดูประวัติทั้งหมด</span>
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1130,6 +1145,13 @@ export default function Dashboard() {
         onClose={() => setIsBudgetModalOpen(false)}
         currentBudget={userSettings?.monthlyBudget || 0}
         currentPayday={userSettings?.paydayDate || 1}
+      />
+
+      <LendingHistoryModal
+        isOpen={isLendingHistoryOpen}
+        onClose={() => setIsLendingHistoryOpen(false)}
+        transactions={transactions}
+        accounts={accounts}
       />
     </div>
   );

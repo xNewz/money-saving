@@ -1,0 +1,517 @@
+import React, { useState, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import type { Transaction, Account } from "@/types";
+import { isLendingExpense, isLendingIncome } from "@/types";
+import {
+  Users,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Calendar,
+  History,
+} from "lucide-react";
+
+interface LendingHistoryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  transactions: Transaction[];
+  accounts: Account[];
+}
+
+export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
+  isOpen,
+  onClose,
+  transactions,
+  accounts,
+}) => {
+  const [activeTab, setActiveTab] = useState<"byPerson" | "timeline">("byPerson");
+  const [filterStatus, setFilterStatus] = useState<"all" | "unpaid" | "settled">("all");
+  const [expandedPerson, setExpandedPerson] = useState<string | null>(null);
+
+  // Filter only lending-related transactions
+  const lendingTxs = useMemo(() => {
+    return transactions
+      .filter((t) => isLendingExpense(t) || isLendingIncome(t))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions]);
+
+  // Aggregate by Person (grouped by Note)
+  const peopleSummary = useMemo(() => {
+    const map: Record<
+      string,
+      {
+        name: string;
+        totalLent: number;
+        totalReceived: number;
+        latestDate: string;
+        transactions: Transaction[];
+      }
+    > = {};
+
+    lendingTxs.forEach((t) => {
+      const key = t.note?.trim() || "ไม่ระบุชื่อ";
+      if (!map[key]) {
+        map[key] = {
+          name: key,
+          totalLent: 0,
+          totalReceived: 0,
+          latestDate: t.date,
+          transactions: [],
+        };
+      }
+      if (isLendingExpense(t)) {
+        map[key].totalLent += t.amount;
+      } else if (isLendingIncome(t)) {
+        map[key].totalReceived += t.amount;
+      }
+      map[key].transactions.push(t);
+      if (new Date(t.date) > new Date(map[key].latestDate)) {
+        map[key].latestDate = t.date;
+      }
+    });
+
+    return Object.values(map)
+      .map((item) => {
+        const balance = Math.max(0, item.totalLent - item.totalReceived);
+        const percentRepaid = item.totalLent > 0
+          ? Math.min(100, Math.round((item.totalReceived / item.totalLent) * 100))
+          : 100;
+        return {
+          ...item,
+          balance,
+          percentRepaid,
+          isSettled: balance === 0,
+        };
+      })
+      .sort((a, b) => {
+        // Unpaid first, then sorted by remaining balance desc
+        if (!a.isSettled && b.isSettled) return -1;
+        if (a.isSettled && !b.isSettled) return 1;
+        return b.balance - a.balance;
+      });
+  }, [lendingTxs]);
+
+  // Totals
+  const totals = useMemo(() => {
+    let lent = 0;
+    let received = 0;
+    peopleSummary.forEach((p) => {
+      lent += p.totalLent;
+      received += p.totalReceived;
+    });
+    return {
+      totalLent: lent,
+      totalReceived: received,
+      outstanding: Math.max(0, lent - received),
+      activeCount: peopleSummary.filter((p) => !p.isSettled).length,
+      settledCount: peopleSummary.filter((p) => p.isSettled).length,
+    };
+  }, [peopleSummary]);
+
+  // Filtered people
+  const filteredPeople = useMemo(() => {
+    if (filterStatus === "unpaid") return peopleSummary.filter((p) => !p.isSettled);
+    if (filterStatus === "settled") return peopleSummary.filter((p) => p.isSettled);
+    return peopleSummary;
+  }, [peopleSummary, filterStatus]);
+
+  const getAccountName = (accId?: string) => {
+    if (!accId) return "ไม่ระบุบัญชี";
+    const acc = accounts.find((a) => a.id === accId);
+    return acc ? acc.name : "ทั่วไป";
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[94vw] sm:max-w-2xl max-h-[88vh] sm:max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-2xl border bg-background shadow-xl">
+        {/* Header Section */}
+        <DialogHeader className="p-4 sm:p-5 pb-3 border-b bg-muted/20 shrink-0 text-left">
+          <div className="flex items-center gap-3 pr-6">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-muted flex items-center justify-center text-foreground shrink-0 shadow-xs">
+              <History className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div className="min-w-0">
+              <DialogTitle className="text-base sm:text-lg font-bold truncate">
+                ประวัติการให้ยืมและการได้รับคืน
+              </DialogTitle>
+              <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
+                ไม่คิดในงบรายจ่าย/รายรับ • แสดงสถานะตามจริง
+              </p>
+            </div>
+          </div>
+
+          {/* Metric Cards Summary - Mobile Optimized */}
+          <div className="grid grid-cols-3 gap-2 mt-3 sm:mt-4">
+            <div className="bg-purple-500/10 border border-purple-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
+              <span className="text-[10px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 truncate">
+                ให้ยืมสะสม
+              </span>
+              <p className="text-xs sm:text-base font-bold text-purple-700 dark:text-purple-300 mt-1 truncate">
+                ฿{totals.totalLent.toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
+              <span className="text-[10px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 truncate">
+                ได้รับคืนแล้ว
+              </span>
+              <p className="text-xs sm:text-base font-bold text-emerald-700 dark:text-emerald-300 mt-1 truncate">
+                ฿{totals.totalReceived.toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
+              <span className="text-[10px] sm:text-xs font-medium text-amber-700 dark:text-amber-300 truncate">
+                คงค้างปัจจุบัน
+              </span>
+              <p className="text-xs sm:text-base font-bold text-amber-700 dark:text-amber-300 mt-1 truncate">
+                ฿{totals.outstanding.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Tab Navigation - Segmented Control (Full width on mobile) */}
+          <div className="space-y-2 mt-3 pt-2 border-t">
+            <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-xl">
+              <button
+                type="button"
+                onClick={() => setActiveTab("byPerson")}
+                className={`py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === "byPerson"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>รายบุคคล ({peopleSummary.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("timeline")}
+                className={`py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === "timeline"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>ไทม์ไลน์ ({lendingTxs.length})</span>
+              </button>
+            </div>
+
+            {/* Filter pills under Tab (Horizontal Scroll on Mobile) */}
+            {activeTab === "byPerson" && peopleSummary.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs">
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("all")}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0 transition-all ${
+                    filterStatus === "all"
+                      ? "bg-foreground text-background"
+                      : "bg-muted/70 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  ทั้งหมด ({peopleSummary.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("unpaid")}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0 transition-all ${
+                    filterStatus === "unpaid"
+                      ? "bg-amber-600 text-white dark:bg-amber-500 dark:text-black font-semibold"
+                      : "bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20"
+                  }`}
+                >
+                  ยังค้าง ({totals.activeCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("settled")}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0 transition-all ${
+                    filterStatus === "settled"
+                      ? "bg-emerald-600 text-white font-semibold"
+                      : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
+                  }`}
+                >
+                  คืนครบแล้ว ({totals.settledCount})
+                </button>
+              </div>
+            )}
+          </div>
+        </DialogHeader>
+
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-2.5">
+          {lendingTxs.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <Users className="w-6 h-6 opacity-40" />
+              </div>
+              <p className="font-semibold text-foreground text-sm">ยังไม่มีประวัติการให้ยืมหรือรับคืนเงิน</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                เมื่อคุณบันทึกรายการหมวด &quot;ให้ยืม&quot; หรือ &quot;ได้รับคืน&quot; ข้อมูลจะปรากฏที่นี่
+              </p>
+            </div>
+          ) : activeTab === "byPerson" ? (
+            filteredPeople.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-xs">
+                ไม่พบรายการตามเงื่อนไขที่เลือก
+              </div>
+            ) : (
+              filteredPeople.map((person) => {
+                const isExpanded = expandedPerson === person.name;
+                return (
+                  <div
+                    key={person.name}
+                    className={`border rounded-xl transition-all overflow-hidden bg-card ${
+                      isExpanded ? "ring-1 ring-primary/20 shadow-sm" : "hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    {/* Person Card Header - Mobile Optimized 2-layer Layout */}
+                    <div
+                      onClick={() => setExpandedPerson(isExpanded ? null : person.name)}
+                      className="p-3 sm:p-3.5 cursor-pointer hover:bg-muted/30 transition-colors space-y-2"
+                    >
+                      {/* Row 1: Name + Status Badge + Expand Button */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-xs sm:text-sm ${
+                              person.isSettled
+                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                                : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                            }`}
+                          >
+                            {person.name.substring(0, 1)}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-sm text-foreground block truncate">
+                              {person.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Calendar className="w-2.5 h-2.5 shrink-0" />
+                              {format(new Date(person.latestDate), "d MMM yyyy")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge + Chevron */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {person.isSettled ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>คืนครบแล้ว</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20">
+                              <AlertCircle className="w-3 h-3" />
+                              <span>ค้าง ฿{person.balance.toLocaleString()}</span>
+                            </span>
+                          )}
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full text-muted-foreground p-0"
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Amounts & Mini Progress Bar */}
+                      <div className="pt-1 border-t border-muted/40">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>
+                            ยืม <strong className="text-foreground font-semibold">฿{person.totalLent.toLocaleString()}</strong>
+                          </span>
+                          <span>
+                            คืนแล้ว <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">฿{person.totalReceived.toLocaleString()}</strong>
+                            {" "}<span className="text-[10px]">({person.percentRepaid}%)</span>
+                          </span>
+                        </div>
+                        {/* Progress Bar */}
+                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mt-1.5">
+                          <div
+                            className={`h-full transition-all duration-300 rounded-full ${
+                              person.isSettled
+                                ? "bg-emerald-500"
+                                : "bg-gradient-to-r from-amber-500 to-emerald-500"
+                            }`}
+                            style={{ width: `${person.percentRepaid}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Accordion Transactions Breakdown */}
+                    {isExpanded && (
+                      <div className="border-t bg-muted/20 p-2.5 sm:p-3 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-semibold text-muted-foreground px-1 pb-1">
+                          <span>ประวัติรายการ ({person.transactions.length})</span>
+                          <span>ยอดเงิน</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {person.transactions.map((tx) => {
+                            const isLend = isLendingExpense(tx);
+                            return (
+                              <div
+                                key={tx.id}
+                                className="flex items-center justify-between p-2 rounded-lg bg-background border text-xs shadow-2xs gap-2"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
+                                      isLend
+                                        ? "bg-purple-500/15 text-purple-700 dark:text-purple-300"
+                                        : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                                    }`}
+                                  >
+                                    {isLend ? (
+                                      <ArrowUpRight className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <ArrowDownLeft className="w-3.5 h-3.5" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="font-semibold text-[11px] sm:text-xs text-foreground truncate">
+                                      {isLend ? "ให้ยืม" : "ได้รับคืน"}
+                                      {tx.note && tx.note !== person.name && (
+                                        <span className="text-muted-foreground font-normal"> ({tx.note})</span>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                      <span>{format(new Date(tx.date), "d MMM yyyy")}</span>
+                                      <span>•</span>
+                                      <span className="flex items-center gap-0.5 truncate max-w-[100px]">
+                                        <Wallet className="w-2.5 h-2.5 shrink-0" />
+                                        {getAccountName(tx.accountId)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div
+                                  className={`font-bold text-xs sm:text-sm shrink-0 text-right ${
+                                    isLend
+                                      ? "text-purple-600 dark:text-purple-400"
+                                      : "text-emerald-600 dark:text-emerald-400"
+                                  }`}
+                                >
+                                  {isLend ? "-" : "+"}฿
+                                  {tx.amount.toLocaleString(undefined, {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )
+          ) : (
+            /* Timeline Tab - Mobile Friendly */
+            <div className="space-y-2">
+              {lendingTxs.map((tx) => {
+                const isLend = isLendingExpense(tx);
+                return (
+                  <div
+                    key={tx.id}
+                    className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl border bg-card hover:bg-muted/20 transition-all text-xs gap-2"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 ${
+                          isLend
+                            ? "bg-purple-500/15 text-purple-700 dark:text-purple-300"
+                            : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        }`}
+                      >
+                        {isLend ? (
+                          <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        ) : (
+                          <ArrowDownLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xs sm:text-sm text-foreground flex items-center gap-1.5">
+                          <span className={isLend ? "text-purple-600 dark:text-purple-400" : "text-emerald-600 dark:text-emerald-400"}>
+                            {tx.category}
+                          </span>
+                          <span className="text-muted-foreground font-normal truncate">
+                            • {tx.note || "ไม่ระบุ"}
+                          </span>
+                        </div>
+                        <div className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                          <span className="flex items-center gap-1 shrink-0">
+                            <Calendar className="w-2.5 h-2.5" />
+                            {format(new Date(tx.date), "d MMM yyyy")}
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 truncate max-w-[120px]">
+                            <Wallet className="w-2.5 h-2.5 shrink-0" />
+                            {getAccountName(tx.accountId)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div
+                        className={`font-bold text-xs sm:text-sm ${
+                          isLend
+                            ? "text-purple-600 dark:text-purple-400"
+                            : "text-emerald-600 dark:text-emerald-400"
+                        }`}
+                      >
+                        {isLend ? "-" : "+"}฿
+                        {tx.amount.toLocaleString(undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                      <span className="text-[9px] sm:text-[10px] text-muted-foreground block">
+                        {isLend ? "เงินให้ยืม" : "เงินรับคืน"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 border-t bg-muted/20 flex justify-end shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            className="rounded-xl px-4 text-xs h-8"
+          >
+            ปิด
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
