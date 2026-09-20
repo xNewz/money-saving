@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, addDoc, updateDoc, getDocs } from "firebase/firestore";
 import type { Transaction, Account, UserSettings, Debt, Goal, Subscription } from "@/types";
-import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS } from "@/types";
+import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS, isLendingExpense, isLendingIncome, isLendingTransaction } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff } from "lucide-react";
@@ -238,12 +238,13 @@ export default function Dashboard() {
   const paginatedTransactions = transactionsForTable.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const totalPages = Math.ceil(transactionsForTable.length / ITEMS_PER_PAGE);
 
+  // Exclude lending / payback from budget and income/expense totals
   const totalIncome = filteredTransactions
-    .filter((t) => t.type === "income")
+    .filter((t) => t.type === "income" && !isLendingIncome(t))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const totalExpense = filteredTransactions
-    .filter((t) => t.type === "expense")
+    .filter((t) => t.type === "expense" && !isLendingExpense(t))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const allTimeIncome = transactions.filter(t => t.type === "income").reduce((acc, t) => acc + t.amount, 0);
@@ -258,7 +259,7 @@ export default function Dashboard() {
   }, 0);
 
   const expensesByCategory = filteredTransactions
-    .filter(t => t.type === 'expense')
+    .filter(t => t.type === 'expense' && !isLendingExpense(t))
     .reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
       return acc;
@@ -276,7 +277,7 @@ export default function Dashboard() {
   });
 
   const expensesByBucket = filteredTransactions
-    .filter(t => t.type === 'expense')
+    .filter(t => t.type === 'expense' && !isLendingExpense(t))
     .reduce((acc, t) => {
       const group = categoryToGroup[t.category] || "รายจ่ายผันแปร";
       acc[group] = (acc[group] || 0) + t.amount;
@@ -296,7 +297,7 @@ export default function Dashboard() {
   });
 
   filteredTransactions.forEach(tx => {
-    if (tx.type === "transfer") return; // Ignore transfers in charts
+    if (tx.type === "transfer" || isLendingTransaction(tx)) return; // Ignore transfers and lending in charts
     const d = new Date(tx.date);
     const dayIndex = Math.floor((d.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
     if (dayIndex >= 0 && dayIndex < daysInMonth) {
@@ -433,7 +434,7 @@ export default function Dashboard() {
   const spentToday = isCurrentMonth 
     ? filteredTransactions
         .filter(t => {
-          if (t.type !== 'expense') return false;
+          if (t.type !== 'expense' || isLendingExpense(t)) return false;
           const d = new Date(t.date);
           return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
         })
@@ -1003,11 +1004,13 @@ export default function Dashboard() {
                           <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
                             isTransfer 
                               ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
-                              : isIncome 
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
-                                : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
+                              : isLendingTransaction(tx)
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400'
+                                : isIncome 
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
+                                  : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
                           }`}>
-                            {isTransfer ? <ArrowRightLeft className="w-4 h-4" /> : tx.category.substring(0, 1)}
+                            {isTransfer ? <ArrowRightLeft className="w-4 h-4" /> : isLendingTransaction(tx) ? <Users className="w-4 h-4" /> : tx.category.substring(0, 1)}
                           </div>
                           
                           <div className="flex flex-col min-w-0 flex-1">
@@ -1024,6 +1027,11 @@ export default function Dashboard() {
                                   {acc.name}
                                 </span>
                               ) : null}
+                              {isLendingTransaction(tx) && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-medium">
+                                  ไม่นับในงบ
+                                </span>
+                              )}
                               <span className="text-xs text-muted-foreground font-medium truncate flex-1 min-w-0">
                                 {format(new Date(tx.date), "d MMM yyyy")} {tx.note && `• ${tx.note}`}
                               </span>
@@ -1032,14 +1040,23 @@ export default function Dashboard() {
                         </div>
 
                         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                          <div className={`font-bold tracking-tight text-right ${
-                            isTransfer 
-                              ? 'text-blue-600 dark:text-blue-500' 
-                              : isIncome 
-                                ? 'text-emerald-600 dark:text-emerald-500' 
-                                : 'text-foreground'
-                          }`}>
-                            {isTransfer ? '' : isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})}
+                          <div className="flex flex-col items-end">
+                            <div className={`font-bold tracking-tight text-right ${
+                              isTransfer 
+                                ? 'text-blue-600 dark:text-blue-500' 
+                                : isLendingTransaction(tx)
+                                  ? 'text-purple-600 dark:text-purple-400'
+                                  : isIncome 
+                                    ? 'text-emerald-600 dark:text-emerald-500' 
+                                    : 'text-foreground'
+                            }`}>
+                              {isTransfer ? '' : isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})}
+                            </div>
+                            {isLendingTransaction(tx) && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {tx.category === 'ให้ยืม' ? 'เงินให้ยืม' : 'เงินรับคืน'}
+                              </span>
+                            )}
                           </div>
                           
                           <DropdownMenu>

@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import type { Transaction, Account } from "@/types";
-import { EXPENSE_CATEGORY_GROUPS } from "@/types";
+import { EXPENSE_CATEGORY_GROUPS, isLendingExpense, isLendingIncome, isLendingTransaction } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, TrendingUp, TrendingDown, Wallet, Calendar, PieChart as PieChartIcon, Target, Users, Clock } from "lucide-react";
@@ -105,7 +105,7 @@ export default function Reports() {
         ? date.getFullYear() === selectedYear 
         : date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
 
-      if (isMatch && tx.type !== "transfer") {
+      if (isMatch && tx.type !== "transfer" && !isLendingTransaction(tx)) {
         if (tx.type === "income") {
           periodIncome += tx.amount;
           incomeCategoryMap[tx.category] = (incomeCategoryMap[tx.category] || 0) + tx.amount;
@@ -118,7 +118,7 @@ export default function Reports() {
         }
       }
 
-      if (date.getFullYear() === selectedYear && tx.type !== "transfer") {
+      if (date.getFullYear() === selectedYear && tx.type !== "transfer" && !isLendingTransaction(tx)) {
         const m = date.getMonth();
         if (tx.type === "income") data[m].income += tx.amount;
         if (tx.type === "expense") data[m].expense += tx.amount;

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import type { Transaction, UserSettings } from "@/types";
+import { isLendingExpense } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles, AlertTriangle, TrendingUp, TrendingDown, Lightbulb, Brain, CheckCircle2, Target } from "lucide-react";
@@ -94,13 +95,13 @@ export default function Insights() {
     lastCycleEndDate.setHours(23, 59, 59, 999);
 
     const currentMonthTxs = transactions.filter(t => {
-      if (t.type !== 'expense') return false;
+      if (t.type !== 'expense' || isLendingExpense(t)) return false;
       const d = new Date(t.date);
       return d >= cycleStartDate && d <= cycleEndDate;
     });
 
     const lastMonthTxs = transactions.filter(t => {
-      if (t.type !== 'expense') return false;
+      if (t.type !== 'expense' || isLendingExpense(t)) return false;
       const d = new Date(t.date);
       return d >= lastCycleStartDate && d <= lastCycleEndDate;
     });

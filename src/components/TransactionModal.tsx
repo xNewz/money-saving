@@ -297,6 +297,18 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
                   )}
                 </SelectContent>
               </Select>
+              {category === "ให้ยืม" && (
+                <div className="flex items-center gap-2 p-2.5 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 rounded-lg text-xs leading-relaxed">
+                  <span className="shrink-0">💡</span>
+                  <span>รายการนี้จะไม่ถูกคิดเป็นรายจ่ายในงบประมาณ แต่จะตัดเงินในบัญชีและไปแสดงใน <b>"เงินรอรับคืน"</b></span>
+                </div>
+              )}
+              {category === "ได้รับคืน" && (
+                <div className="flex items-center gap-2 p-2.5 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 rounded-lg text-xs leading-relaxed">
+                  <span className="shrink-0">💡</span>
+                  <span>รายการนี้จะไม่ถูกคิดเป็นรายได้ในงบประมาณ แต่จะเพิ่มเงินในบัญชีและตัดยอดใน <b>"เงินรอรับคืน"</b></span>
+                </div>
+              )}
             </div>
           )}
 

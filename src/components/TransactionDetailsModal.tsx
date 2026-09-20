@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import type { Transaction, Account } from "@/types";
-import { ArrowRightLeft } from "lucide-react";
+import { isLendingTransaction } from "@/types";
+import { ArrowRightLeft, Users } from "lucide-react";
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function TransactionDetailsModal({
 
   const isTransfer = transaction.type === "transfer";
   const isIncome = transaction.type === "income";
+  const isLend = isLendingTransaction(transaction);
 
   const acc = accounts.find((a) => a.id === transaction.accountId);
   const toAcc = accounts.find((a) => a.id === transaction.toAccountId);
@@ -39,6 +41,8 @@ export function TransactionDetailsModal({
               className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-sm ${
                 isTransfer
                   ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
+                  : isLend
+                  ? "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400"
                   : isIncome
                   ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
                   : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"
@@ -46,6 +50,8 @@ export function TransactionDetailsModal({
             >
               {isTransfer ? (
                 <ArrowRightLeft className="w-5 h-5" />
+              ) : isLend ? (
+                <Users className="w-5 h-5" />
               ) : (
                 transaction.category.substring(0, 1)
               )}
@@ -63,6 +69,8 @@ export function TransactionDetailsModal({
               className={`text-3xl font-bold tracking-tight ${
                 isTransfer
                   ? "text-blue-600 dark:text-blue-500"
+                  : isLend
+                  ? "text-purple-600 dark:text-purple-400"
                   : isIncome
                   ? "text-emerald-600 dark:text-emerald-500"
                   : "text-rose-600 dark:text-rose-500"
@@ -74,7 +82,26 @@ export function TransactionDetailsModal({
                 maximumFractionDigits: 2,
               })}
             </span>
+            {isLend && (
+              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                {transaction.category === "ให้ยืม" ? "เงินให้ยืม (ไม่คิดในงบรายจ่าย)" : "เงินรับคืน (ไม่คิดในงบรายรับ)"}
+              </span>
+            )}
           </div>
+
+          {isLend && (
+            <div className="flex items-start gap-2.5 p-3 bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800/50 rounded-xl text-xs leading-relaxed">
+              <span className="text-sm">💡</span>
+              <div>
+                <p className="font-semibold">
+                  {transaction.category === "ให้ยืม" ? "รายการเงินให้ยืม" : "รายการได้รับคืน"}
+                </p>
+                <p className="text-muted-foreground mt-0.5">
+                  รายการนี้ไม่ถูกนำไปคำนวณในงบประมาณและรายจ่าย/รายรับประจำเดือน แต่จะตัดหรือเพิ่มยอดเงินในบัญชีจริง และแสดงในรายการเงินรอรับคืนตามปกติ
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-4 text-sm bg-background p-4 rounded-xl border border-muted/50 shadow-sm">
             <div className="grid grid-cols-3 items-start gap-4">

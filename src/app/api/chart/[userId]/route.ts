@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import QuickChart from 'quickchart-js';
+import { isLendingTransaction } from '@/types';
 
 export async function GET(
   request: Request,
@@ -32,7 +33,7 @@ export async function GET(
 
     txsSnap.docs.forEach(doc => {
       const tx = doc.data();
-      if (tx.type === 'transfer') return;
+      if (tx.type === 'transfer' || isLendingTransaction(tx as any)) return;
       
       const d = new Date(tx.date);
       if (d.getMonth() === month && d.getFullYear() === year) {

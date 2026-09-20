@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import { isLendingExpense, isLendingIncome } from '@/types';
 
 export async function GET(
   request: Request,
@@ -50,8 +51,8 @@ export async function GET(
       return d >= cycleStartDate && d <= cycleEndDate;
     });
 
-    const totalIncome = currentCycleTxs.filter((t: any) => t.type === 'income').reduce((sum, t: any) => sum + t.amount, 0);
-    const totalExpense = currentCycleTxs.filter((t: any) => t.type === 'expense').reduce((sum, t: any) => sum + t.amount, 0);
+    const totalIncome = currentCycleTxs.filter((t: any) => t.type === 'income' && !isLendingIncome(t)).reduce((sum, t: any) => sum + t.amount, 0);
+    const totalExpense = currentCycleTxs.filter((t: any) => t.type === 'expense' && !isLendingExpense(t)).reduce((sum, t: any) => sum + t.amount, 0);
 
     const budget = settings?.monthlyBudget || 0;
     const daysInMonth = Math.round((cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -61,7 +62,7 @@ export async function GET(
     const spentToday = isCurrentMonth 
       ? currentCycleTxs
           .filter((t: any) => {
-            if (t.type !== 'expense') return false;
+            if (t.type !== 'expense' || isLendingExpense(t)) return false;
             const d = new Date(t.date);
             return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
           })

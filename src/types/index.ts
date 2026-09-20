@@ -101,3 +101,12 @@ export const EXTENDED_BANK_LISTS: Record<string, any> = {
     color: "#4f46e5"
   }
 };
+
+export const isLendingExpense = (tx: { type: string; category?: string }) => 
+  tx.type === "expense" && tx.category === "ให้ยืม";
+
+export const isLendingIncome = (tx: { type: string; category?: string }) => 
+  tx.type === "income" && tx.category === "ได้รับคืน";
+
+export const isLendingTransaction = (tx: { type: string; category?: string }) =>
+  isLendingExpense(tx) || isLendingIncome(tx);
