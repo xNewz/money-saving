@@ -7,14 +7,16 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import type { Transaction, Account } from "@/types";
-import { isLendingTransaction } from "@/types";
-import { ArrowRightLeft, Users } from "lucide-react";
+import { isLendingTransaction, isForgivenLending } from "@/types";
+import { ArrowRightLeft, Users, HeartHandshake, Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   transaction: Transaction | undefined;
   accounts: Account[];
+  onToggleForgive?: (tx: Transaction) => void;
 }
 
 export function TransactionDetailsModal({
@@ -22,6 +24,7 @@ export function TransactionDetailsModal({
   onClose,
   transaction,
   accounts,
+  onToggleForgive,
 }: TransactionDetailsModalProps) {
   if (!transaction) return null;
 
@@ -84,24 +87,81 @@ export function TransactionDetailsModal({
             </span>
             {isLend && (
               <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                {transaction.category === "ให้ยืม" ? "เงินให้ยืม (ไม่คิดในงบรายจ่าย)" : "เงินรับคืน (ไม่คิดในงบรายรับ)"}
+                {transaction.category === "ให้ยืม"
+                  ? transaction.isForgiven
+                    ? "ยกหนี้ให้แล้ว (คิดเป็นรายจ่าย)"
+                    : "เงินให้ยืม (ไม่คิดในงบรายจ่าย)"
+                  : "เงินรับคืน (ไม่คิดในงบรายรับ)"}
+              </span>
+            )}
+            {transaction.category === "ให้ยืม" && transaction.isForgiven && (
+              <span className="inline-flex items-center justify-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-semibold border border-amber-500/30 w-fit mx-auto mt-1">
+                <HeartHandshake className="w-3.5 h-3.5" />
+                ยกหนี้ให้แล้ว
               </span>
             )}
           </div>
 
-          {isLend && (
+          {transaction.category === "ให้ยืม" ? (
+            transaction.isForgiven ? (
+              <div className="flex flex-col gap-2.5 p-3.5 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs leading-relaxed">
+                <div className="flex items-start gap-2">
+                  <span className="text-base">🤝</span>
+                  <div>
+                    <p className="font-semibold">ยกหนี้ให้เรียบร้อยแล้ว</p>
+                    <p className="text-muted-foreground mt-0.5">
+                      รายการนี้ถูกบันทึกเป็นรายจ่ายในงบประมาณของคุณแล้ว และยอดหนี้คงค้างถูกเคลียร์เรียบร้อย โดยไม่มีการตัดเงินในบัญชีซ้ำ
+                    </p>
+                  </div>
+                </div>
+                {onToggleForgive && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onToggleForgive(transaction)}
+                    className="w-full mt-1 border-amber-300 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-lg text-xs h-8"
+                  >
+                    <Undo2 className="w-3.5 h-3.5 mr-1.5" />
+                    ยกเลิกการยกหนี้ (กลับเป็นเงินให้ยืมปกติ)
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5 p-3.5 bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800/50 rounded-xl text-xs leading-relaxed">
+                <div className="flex items-start gap-2">
+                  <span className="text-base">💡</span>
+                  <div>
+                    <p className="font-semibold">รายการเงินให้ยืม</p>
+                    <p className="text-muted-foreground mt-0.5">
+                      รายการนี้ยังไม่ถูกนำไปคำนวณในงบรายจ่ายประจำเดือน หากต้องการยกหนี้ให้ สามารถกดปุ่มด้านล่างเพื่อบันทึกเป็นรายจ่ายได้ทันที
+                    </p>
+                  </div>
+                </div>
+                {onToggleForgive && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => onToggleForgive(transaction)}
+                    className="w-full mt-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs h-8 font-medium shadow-sm transition-all"
+                  >
+                    <HeartHandshake className="w-3.5 h-3.5 mr-1.5" />
+                    ยกหนี้ให้ (คิดเป็นรายจ่าย)
+                  </Button>
+                )}
+              </div>
+            )
+          ) : isLend ? (
             <div className="flex items-start gap-2.5 p-3 bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800/50 rounded-xl text-xs leading-relaxed">
               <span className="text-sm">💡</span>
               <div>
-                <p className="font-semibold">
-                  {transaction.category === "ให้ยืม" ? "รายการเงินให้ยืม" : "รายการได้รับคืน"}
-                </p>
+                <p className="font-semibold">รายการได้รับคืน</p>
                 <p className="text-muted-foreground mt-0.5">
-                  รายการนี้ไม่ถูกนำไปคำนวณในงบประมาณและรายจ่าย/รายรับประจำเดือน แต่จะตัดหรือเพิ่มยอดเงินในบัญชีจริง และแสดงในรายการเงินรอรับคืนตามปกติ
+                  รายการนี้ไม่ถูกนำไปคำนวณในงบประมาณและรายรับประจำเดือน แต่จะเพิ่มยอดเงินในบัญชีจริง และตัดยอดในรายการเงินรอรับคืนตามปกติ
                 </p>
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="grid gap-4 text-sm bg-background p-4 rounded-xl border border-muted/50 shadow-sm">
             <div className="grid grid-cols-3 items-start gap-4">

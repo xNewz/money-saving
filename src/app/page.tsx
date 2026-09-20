@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, addDoc, updateDoc, getDocs } from "firebase/firestore";
-import type { Transaction, Account, UserSettings, Debt, Goal, Subscription } from "@/types";
+import type { Transaction, Account, UserSettings, Debt, Subscription } from "@/types";
 import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS, isLendingExpense, isLendingIncome, isLendingTransaction } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff, History } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff, History, HeartHandshake } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
 import { AccountModal } from "@/components/AccountModal";
@@ -346,6 +346,99 @@ export default function Dashboard() {
     setIsModalOpen(true);
   };
 
+  const handleToggleForgiveDebt = async (tx: Transaction) => {
+    try {
+      if (tx.isForgiven) {
+        await updateDoc(doc(db, "transactions", tx.id), {
+          isForgiven: false,
+          forgivenAt: null,
+        });
+        toast.success("ยกเลิกการยกหนี้แล้ว (กลับเป็นเงินให้ยืมปกติ ไม่คิดในงบ)");
+      } else {
+        await updateDoc(doc(db, "transactions", tx.id), {
+          isForgiven: true,
+          forgivenAt: Date.now(),
+        });
+        toast.success(`ยกหนี้ให้ ฿${tx.amount.toLocaleString()} เรียบร้อยแล้ว (คิดเป็นรายจ่าย)`);
+      }
+      if (transactionToView && transactionToView.id === tx.id) {
+        setTransactionToView({
+          ...transactionToView,
+          isForgiven: !transactionToView.isForgiven,
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling forgiven debt: ", error);
+      toast.error("ไม่สามารถปรับสถานะการยกหนี้ได้");
+    }
+  };
+
+  const handleForgivePerson = async (personName: string, remainingBalance: number) => {
+    if (remainingBalance <= 0) return;
+    try {
+      // Find unforgiven lending transactions for this person
+      const targetTxs = transactions
+        .filter(
+          (t) =>
+            t.type === "expense" &&
+            t.category === "ให้ยืม" &&
+            (t.note?.trim() || "ไม่ระบุ") === (personName.trim() || "ไม่ระบุ") &&
+            !t.isForgiven
+        )
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      if (targetTxs.length === 0) {
+        toast.error("ไม่พบรายการให้ยืมที่คงค้างของบุคคลนี้");
+        return;
+      }
+
+      let amountLeftToForgive = remainingBalance;
+
+      for (const tx of targetTxs) {
+        if (amountLeftToForgive <= 0) break;
+
+        if (tx.amount <= amountLeftToForgive) {
+          // Forgive entire transaction
+          await updateDoc(doc(db, "transactions", tx.id), {
+            isForgiven: true,
+            forgivenAt: Date.now(),
+          });
+          amountLeftToForgive -= tx.amount;
+        } else {
+          // Partial forgiveness: split transaction
+          const unforgivenPart = tx.amount - amountLeftToForgive;
+          const forgivenPart = amountLeftToForgive;
+
+          await updateDoc(doc(db, "transactions", tx.id), {
+            amount: unforgivenPart,
+          });
+
+          await addDoc(collection(db, "transactions"), {
+            userId: tx.userId,
+            accountId: tx.accountId || null,
+            toAccountId: tx.toAccountId || null,
+            amount: forgivenPart,
+            type: "expense",
+            category: "ให้ยืม",
+            date: tx.date,
+            note: tx.note || "",
+            createdAt: Date.now(),
+            isForgiven: true,
+            forgivenAt: Date.now(),
+          });
+
+          amountLeftToForgive = 0;
+          break;
+        }
+      }
+
+      toast.success(`ยกหนี้ให้ "${personName}" จำนวน ฿${remainingBalance.toLocaleString()} เรียบร้อยแล้ว (คิดเป็นรายจ่าย)`);
+    } catch (error) {
+      console.error("Error forgiving person debt: ", error);
+      toast.error("เกิดข้อผิดพลาดในการยกหนี้");
+    }
+  };
+
   const handleViewTx = (tx: Transaction) => {
     setTransactionToView(tx);
     setIsViewModalOpen(true);
@@ -464,27 +557,30 @@ export default function Dashboard() {
     : 0;
 
   // Outstanding Lent amounts
-  const lentOutBalances: Record<string, { totalLent: number, totalReceived: number, balance: number, latestDate: string }> = {};
+  const lentOutBalances: Record<string, { totalLent: number, totalReceived: number, totalForgiven: number, balance: number, latestDate: string }> = {};
 
   transactions.forEach(t => {
     if (t.type === 'expense' && t.category === 'ให้ยืม') {
       const key = t.note?.trim() || 'ไม่ระบุ';
-      if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0, balance: 0, latestDate: t.date };
+      if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0, totalForgiven: 0, balance: 0, latestDate: t.date };
       lentOutBalances[key].totalLent += t.amount;
+      if (t.isForgiven) {
+        lentOutBalances[key].totalForgiven += t.amount;
+      }
       if (new Date(t.date) > new Date(lentOutBalances[key].latestDate)) {
           lentOutBalances[key].latestDate = t.date;
       }
     } else if (t.type === 'income' && t.category === 'ได้รับคืน') {
       const key = t.note?.trim() || 'ไม่ระบุ';
       if (!lentOutBalances[key]) {
-          lentOutBalances[key] = { totalLent: 0, totalReceived: 0, balance: 0, latestDate: t.date };
+          lentOutBalances[key] = { totalLent: 0, totalReceived: 0, totalForgiven: 0, balance: 0, latestDate: t.date };
       }
       lentOutBalances[key].totalReceived += t.amount;
     }
   });
 
   const outstandingLends = Object.entries(lentOutBalances)
-    .map(([note, data]) => ({ note, ...data, balance: data.totalLent - data.totalReceived }))
+    .map(([note, data]) => ({ note, ...data, balance: Math.max(0, data.totalLent - data.totalReceived - data.totalForgiven) }))
     .filter(item => item.balance > 0)
     .sort((a, b) => b.balance - a.balance);
 
@@ -821,11 +917,24 @@ export default function Dashboard() {
                           <Clock className="w-3 h-3" /> ยืมล่าสุด: {format(new Date(lend.latestDate), "d MMM yyyy")}
                         </span>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <span className="font-bold text-violet-500 text-base">฿{lend.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5">
-                          (ให้ยืม {lend.totalLent.toLocaleString()} / คืนแล้ว {lend.totalReceived.toLocaleString()})
-                        </span>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex flex-col items-end">
+                          <span className="font-bold text-violet-500 text-base">฿{lend.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            (ให้ยืม {lend.totalLent.toLocaleString()} / คืนแล้ว {lend.totalReceived.toLocaleString()}{lend.totalForgiven > 0 ? ` / ยกหนี้ ${lend.totalForgiven.toLocaleString()}` : ''})
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleForgivePerson(lend.note, lend.balance)}
+                          className="text-xs h-7 px-2 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg gap-1 shrink-0"
+                          title="ยกหนี้ให้ทั้งหมด (คิดเป็นรายจ่าย)"
+                        >
+                          <HeartHandshake className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">ยกหนี้ให้</span>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1042,11 +1151,16 @@ export default function Dashboard() {
                                   {acc.name}
                                 </span>
                               ) : null}
-                              {isLendingTransaction(tx) && (
+                              {tx.category === 'ให้ยืม' && tx.isForgiven ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 font-medium flex items-center gap-1">
+                                  <HeartHandshake className="w-3 h-3" />
+                                  ยกหนี้ให้แล้ว (เป็นรายจ่าย)
+                                </span>
+                              ) : isLendingTransaction(tx) ? (
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-medium">
                                   ไม่นับในงบ
                                 </span>
-                              )}
+                              ) : null}
                               <span className="text-xs text-muted-foreground font-medium truncate flex-1 min-w-0">
                                 {format(new Date(tx.date), "d MMM yyyy")} {tx.note && `• ${tx.note}`}
                               </span>
@@ -1072,6 +1186,11 @@ export default function Dashboard() {
                                 {tx.category === 'ให้ยืม' ? 'เงินให้ยืม' : 'เงินรับคืน'}
                               </span>
                             )}
+                            {tx.category === 'ให้ยืม' && tx.isForgiven && (
+                              <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                                ยกหนี้ให้ (รายจ่าย)
+                              </span>
+                            )}
                           </div>
                           
                           <DropdownMenu>
@@ -1081,6 +1200,18 @@ export default function Dashboard() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="rounded-xl">
+                              {tx.category === 'ให้ยืม' && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleForgiveDebt(tx);
+                                  }}
+                                  className="rounded-lg cursor-pointer text-amber-600 dark:text-amber-400 focus:text-amber-600"
+                                >
+                                  <HeartHandshake className="h-4 w-4 mr-2" />
+                                  {tx.isForgiven ? "ยกเลิกการยกหนี้" : "ยกหนี้ให้ (คิดเป็นรายจ่าย)"}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditTx(tx); }} className="rounded-lg cursor-pointer">
                                 <Edit2 className="h-4 w-4 mr-2" /> แก้ไข
                               </DropdownMenuItem>
@@ -1130,6 +1261,7 @@ export default function Dashboard() {
           onClose={() => { setIsViewModalOpen(false); setTimeout(() => setTransactionToView(undefined), 300); }}
           transaction={transactionToView}
           accounts={accounts}
+          onToggleForgive={handleToggleForgiveDebt}
         />
 
         <AccountModal
@@ -1152,6 +1284,8 @@ export default function Dashboard() {
         onClose={() => setIsLendingHistoryOpen(false)}
         transactions={transactions}
         accounts={accounts}
+        onToggleForgive={handleToggleForgiveDebt}
+        onForgivePerson={handleForgivePerson}
       />
     </div>
   );

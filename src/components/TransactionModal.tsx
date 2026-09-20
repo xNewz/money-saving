@@ -58,21 +58,24 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
 
     const qTxs = query(collection(db, "transactions"), where("userId", "==", user.uid));
     const unsubTxs = onSnapshot(qTxs, (snapshot) => {
-      const lentOutBalances: Record<string, { totalLent: number, totalReceived: number }> = {};
+      const lentOutBalances: Record<string, { totalLent: number, totalReceived: number, totalForgiven: number }> = {};
       snapshot.forEach(docSnap => {
         const t = docSnap.data() as Transaction;
         if (t.type === 'expense' && t.category === 'ให้ยืม') {
             const key = t.note?.trim() || 'ไม่ระบุ';
-            if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0 };
+            if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0, totalForgiven: 0 };
             lentOutBalances[key].totalLent += t.amount;
+            if (t.isForgiven) {
+              lentOutBalances[key].totalForgiven += t.amount;
+            }
         } else if (t.type === 'income' && t.category === 'ได้รับคืน') {
             const key = t.note?.trim() || 'ไม่ระบุ';
-            if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0 };
+            if (!lentOutBalances[key]) lentOutBalances[key] = { totalLent: 0, totalReceived: 0, totalForgiven: 0 };
             lentOutBalances[key].totalReceived += t.amount;
         }
       });
       const outstanding = Object.entries(lentOutBalances)
-        .map(([note, data]) => ({ note, balance: data.totalLent - data.totalReceived }))
+        .map(([note, data]) => ({ note, balance: Math.max(0, data.totalLent - data.totalReceived - data.totalForgiven) }))
         .filter(item => item.balance > 0)
         .sort((a, b) => b.balance - a.balance);
       setOutstandingLends(outstanding);

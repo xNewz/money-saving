@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import type { Transaction, Account } from "@/types";
-import { isLendingExpense, isLendingIncome } from "@/types";
+import { isRawLendingTransaction, isRawLendingExpense, isLendingIncome, isForgivenLending } from "@/types";
 import {
   Users,
   Clock,
@@ -21,6 +21,8 @@ import {
   ArrowDownLeft,
   Calendar,
   History,
+  HeartHandshake,
+  Undo2,
 } from "lucide-react";
 
 interface LendingHistoryModalProps {
@@ -28,6 +30,8 @@ interface LendingHistoryModalProps {
   onClose: () => void;
   transactions: Transaction[];
   accounts: Account[];
+  onToggleForgive?: (tx: Transaction) => void;
+  onForgivePerson?: (personName: string, remainingBalance: number) => void;
 }
 
 export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
@@ -35,15 +39,18 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
   onClose,
   transactions,
   accounts,
+  onToggleForgive,
+  onForgivePerson,
 }) => {
   const [activeTab, setActiveTab] = useState<"byPerson" | "timeline">("byPerson");
   const [filterStatus, setFilterStatus] = useState<"all" | "unpaid" | "settled">("all");
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null);
+  const [personToForgive, setPersonToForgive] = useState<{ name: string; balance: number } | null>(null);
 
-  // Filter only lending-related transactions
+  // Filter all lending-related transactions (including active, repaid, and forgiven)
   const lendingTxs = useMemo(() => {
     return transactions
-      .filter((t) => isLendingExpense(t) || isLendingIncome(t))
+      .filter((t) => isRawLendingTransaction(t))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions]);
 
@@ -55,6 +62,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
         name: string;
         totalLent: number;
         totalReceived: number;
+        totalForgiven: number;
         latestDate: string;
         transactions: Transaction[];
       }
@@ -67,12 +75,16 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
           name: key,
           totalLent: 0,
           totalReceived: 0,
+          totalForgiven: 0,
           latestDate: t.date,
           transactions: [],
         };
       }
-      if (isLendingExpense(t)) {
+      if (t.type === "expense" && t.category === "ให้ยืม") {
         map[key].totalLent += t.amount;
+        if (t.isForgiven) {
+          map[key].totalForgiven += t.amount;
+        }
       } else if (isLendingIncome(t)) {
         map[key].totalReceived += t.amount;
       }
@@ -84,15 +96,21 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
 
     return Object.values(map)
       .map((item) => {
-        const balance = Math.max(0, item.totalLent - item.totalReceived);
+        const balance = Math.max(0, item.totalLent - item.totalReceived - item.totalForgiven);
+        const resolvedAmount = item.totalReceived + item.totalForgiven;
         const percentRepaid = item.totalLent > 0
-          ? Math.min(100, Math.round((item.totalReceived / item.totalLent) * 100))
+          ? Math.min(100, Math.round((resolvedAmount / item.totalLent) * 100))
           : 100;
+        const isSettled = balance === 0;
+        const isFullyForgiven = isSettled && item.totalForgiven > 0 && item.totalReceived === 0;
+        const isPartiallyForgiven = isSettled && item.totalForgiven > 0 && item.totalReceived > 0;
         return {
           ...item,
           balance,
           percentRepaid,
-          isSettled: balance === 0,
+          isSettled,
+          isFullyForgiven,
+          isPartiallyForgiven,
         };
       })
       .sort((a, b) => {
@@ -107,14 +125,17 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
   const totals = useMemo(() => {
     let lent = 0;
     let received = 0;
+    let forgiven = 0;
     peopleSummary.forEach((p) => {
       lent += p.totalLent;
       received += p.totalReceived;
+      forgiven += p.totalForgiven;
     });
     return {
       totalLent: lent,
       totalReceived: received,
-      outstanding: Math.max(0, lent - received),
+      totalForgiven: forgiven,
+      outstanding: Math.max(0, lent - received - forgiven),
       activeCount: peopleSummary.filter((p) => !p.isSettled).length,
       settledCount: peopleSummary.filter((p) => p.isSettled).length,
     };
@@ -153,7 +174,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
           </div>
 
           {/* Metric Cards Summary - Mobile Optimized */}
-          <div className="grid grid-cols-3 gap-2 mt-3 sm:mt-4">
+          <div className={`grid ${totals.totalForgiven > 0 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"} gap-2 mt-3 sm:mt-4`}>
             <div className="bg-purple-500/10 border border-purple-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
               <span className="text-[10px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 truncate">
                 ให้ยืมสะสม
@@ -170,6 +191,17 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                 ฿{totals.totalReceived.toLocaleString()}
               </p>
             </div>
+            {totals.totalForgiven > 0 && (
+              <div className="bg-rose-500/10 border border-rose-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] sm:text-xs font-medium text-rose-700 dark:text-rose-300 truncate flex items-center gap-1">
+                  <HeartHandshake className="w-3 h-3" />
+                  ยกหนี้ให้แล้ว
+                </span>
+                <p className="text-xs sm:text-base font-bold text-rose-700 dark:text-rose-300 mt-1 truncate">
+                  ฿{totals.totalForgiven.toLocaleString()}
+                </p>
+              </div>
+            )}
             <div className="bg-amber-500/10 border border-amber-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
               <span className="text-[10px] sm:text-xs font-medium text-amber-700 dark:text-amber-300 truncate">
                 คงค้างปัจจุบัน
@@ -305,13 +337,42 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                           </div>
                         </div>
 
-                        {/* Status Badge + Chevron */}
+                        {/* Status Badge + Forgive Button + Chevron */}
                         <div className="flex items-center gap-1.5 shrink-0">
+                          {onForgivePerson && !person.isSettled && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPersonToForgive({ name: person.name, balance: person.balance });
+                              }}
+                              className="h-7 px-2 text-[11px] font-medium text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg gap-1 shrink-0"
+                              title="ยกหนี้ให้ (คิดเป็นรายจ่าย)"
+                            >
+                              <HeartHandshake className="w-3.5 h-3.5" />
+                              <span>ยกหนี้ให้</span>
+                            </Button>
+                          )}
+
                           {person.isSettled ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>คืนครบแล้ว</span>
-                            </span>
+                            person.isFullyForgiven ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold border border-rose-500/20">
+                                <HeartHandshake className="w-3 h-3" />
+                                <span>ยกหนี้ให้แล้ว</span>
+                              </span>
+                            ) : person.isPartiallyForgiven ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>คืน + ยกหนี้ครบ</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>คืนครบแล้ว</span>
+                              </span>
+                            )
                           ) : (
                             <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20">
                               <AlertCircle className="w-3 h-3" />
@@ -335,21 +396,30 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
 
                       {/* Row 2: Amounts & Mini Progress Bar */}
                       <div className="pt-1 border-t border-muted/40">
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-1">
                           <span>
                             ยืม <strong className="text-foreground font-semibold">฿{person.totalLent.toLocaleString()}</strong>
                           </span>
-                          <span>
-                            คืนแล้ว <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">฿{person.totalReceived.toLocaleString()}</strong>
-                            {" "}<span className="text-[10px]">({person.percentRepaid}%)</span>
-                          </span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>
+                              คืนแล้ว <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">฿{person.totalReceived.toLocaleString()}</strong>
+                            </span>
+                            {person.totalForgiven > 0 && (
+                              <span>
+                                ยกหนี้ <strong className="text-rose-600 dark:text-rose-400 font-semibold">฿{person.totalForgiven.toLocaleString()}</strong>
+                              </span>
+                            )}
+                            <span className="text-[10px]">({person.percentRepaid}%)</span>
+                          </div>
                         </div>
                         {/* Progress Bar */}
                         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mt-1.5">
                           <div
                             className={`h-full transition-all duration-300 rounded-full ${
                               person.isSettled
-                                ? "bg-emerald-500"
+                                ? person.isFullyForgiven
+                                  ? "bg-rose-500"
+                                  : "bg-emerald-500"
                                 : "bg-gradient-to-r from-amber-500 to-emerald-500"
                             }`}
                             style={{ width: `${person.percentRepaid}%` }}
@@ -367,7 +437,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                         </div>
                         <div className="space-y-1.5">
                           {person.transactions.map((tx) => {
-                            const isLend = isLendingExpense(tx);
+                            const isLend = tx.type === "expense" && tx.category === "ให้ยืม";
                             return (
                               <div
                                 key={tx.id}
@@ -377,21 +447,32 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                                   <div
                                     className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
                                       isLend
-                                        ? "bg-purple-500/15 text-purple-700 dark:text-purple-300"
+                                        ? tx.isForgiven
+                                          ? "bg-rose-500/15 text-rose-700 dark:text-rose-300"
+                                          : "bg-purple-500/15 text-purple-700 dark:text-purple-300"
                                         : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
                                     }`}
                                   >
                                     {isLend ? (
-                                      <ArrowUpRight className="w-3.5 h-3.5" />
+                                      tx.isForgiven ? (
+                                        <HeartHandshake className="w-3.5 h-3.5" />
+                                      ) : (
+                                        <ArrowUpRight className="w-3.5 h-3.5" />
+                                      )
                                     ) : (
                                       <ArrowDownLeft className="w-3.5 h-3.5" />
                                     )}
                                   </div>
                                   <div className="min-w-0">
-                                    <div className="font-semibold text-[11px] sm:text-xs text-foreground truncate">
-                                      {isLend ? "ให้ยืม" : "ได้รับคืน"}
+                                    <div className="font-semibold text-[11px] sm:text-xs text-foreground truncate flex items-center gap-1.5">
+                                      <span>{isLend ? "ให้ยืม" : "ได้รับคืน"}</span>
+                                      {tx.isForgiven && (
+                                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 font-medium">
+                                          ยกหนี้ให้แล้ว
+                                        </span>
+                                      )}
                                       {tx.note && tx.note !== person.name && (
-                                        <span className="text-muted-foreground font-normal"> ({tx.note})</span>
+                                        <span className="text-muted-foreground font-normal truncate"> ({tx.note})</span>
                                       )}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
@@ -401,22 +482,60 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                                         <Wallet className="w-2.5 h-2.5 shrink-0" />
                                         {getAccountName(tx.accountId)}
                                       </span>
+                                      {tx.isForgiven && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="text-rose-600 dark:text-rose-400 font-medium">คิดเป็นรายจ่ายแล้ว</span>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
 
-                                <div
-                                  className={`font-bold text-xs sm:text-sm shrink-0 text-right ${
-                                    isLend
-                                      ? "text-purple-600 dark:text-purple-400"
-                                      : "text-emerald-600 dark:text-emerald-400"
-                                  }`}
-                                >
-                                  {isLend ? "-" : "+"}฿
-                                  {tx.amount.toLocaleString(undefined, {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 2,
-                                  })}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <div
+                                    className={`font-bold text-xs sm:text-sm text-right ${
+                                      isLend
+                                        ? tx.isForgiven
+                                          ? "text-rose-600 dark:text-rose-400"
+                                          : "text-purple-600 dark:text-purple-400"
+                                        : "text-emerald-600 dark:text-emerald-400"
+                                    }`}
+                                  >
+                                    {isLend ? "-" : "+"}฿
+                                    {tx.amount.toLocaleString(undefined, {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </div>
+
+                                  {isLend && onToggleForgive && (
+                                    tx.isForgiven ? (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onToggleForgive(tx)}
+                                        className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-rose-600 rounded"
+                                        title="ยกเลิกการยกหนี้"
+                                      >
+                                        <Undo2 className="w-3 h-3 mr-0.5" />
+                                        <span>ยกเลิก</span>
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onToggleForgive(tx)}
+                                        className="h-6 px-1.5 text-[10px] text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded flex items-center gap-1 font-medium"
+                                        title="ยกหนี้ให้รายการนี้ (คิดเป็นรายจ่าย)"
+                                      >
+                                        <HeartHandshake className="w-3 h-3" />
+                                        <span>ยกหนี้</span>
+                                      </Button>
+                                    )
+                                  )}
                                 </div>
                               </div>
                             );
@@ -432,7 +551,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
             /* Timeline Tab - Mobile Friendly */
             <div className="space-y-2">
               {lendingTxs.map((tx) => {
-                const isLend = isLendingExpense(tx);
+                const isLend = tx.type === "expense" && tx.category === "ให้ยืม";
                 return (
                   <div
                     key={tx.id}
@@ -442,21 +561,40 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                       <div
                         className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 ${
                           isLend
-                            ? "bg-purple-500/15 text-purple-700 dark:text-purple-300"
+                            ? tx.isForgiven
+                              ? "bg-rose-500/15 text-rose-700 dark:text-rose-300"
+                              : "bg-purple-500/15 text-purple-700 dark:text-purple-300"
                             : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
                         }`}
                       >
                         {isLend ? (
-                          <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          tx.isForgiven ? (
+                            <HeartHandshake className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          ) : (
+                            <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          )
                         ) : (
                           <ArrowDownLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         )}
                       </div>
                       <div className="min-w-0">
                         <div className="font-semibold text-xs sm:text-sm text-foreground flex items-center gap-1.5">
-                          <span className={isLend ? "text-purple-600 dark:text-purple-400" : "text-emerald-600 dark:text-emerald-400"}>
+                          <span
+                            className={
+                              isLend
+                                ? tx.isForgiven
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-purple-600 dark:text-purple-400"
+                                : "text-emerald-600 dark:text-emerald-400"
+                            }
+                          >
                             {tx.category}
                           </span>
+                          {tx.isForgiven && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 font-medium">
+                              ยกหนี้ให้แล้ว
+                            </span>
+                          )}
                           <span className="text-muted-foreground font-normal truncate">
                             • {tx.note || "ไม่ระบุ"}
                           </span>
@@ -471,27 +609,65 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                             <Wallet className="w-2.5 h-2.5 shrink-0" />
                             {getAccountName(tx.accountId)}
                           </span>
+                          {tx.isForgiven && (
+                            <>
+                              <span>•</span>
+                              <span className="text-rose-600 dark:text-rose-400 font-medium">เป็นรายจ่าย</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div
-                        className={`font-bold text-xs sm:text-sm ${
-                          isLend
-                            ? "text-purple-600 dark:text-purple-400"
-                            : "text-emerald-600 dark:text-emerald-400"
-                        }`}
-                      >
-                        {isLend ? "-" : "+"}฿
-                        {tx.amount.toLocaleString(undefined, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        })}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <div
+                          className={`font-bold text-xs sm:text-sm ${
+                            isLend
+                              ? tx.isForgiven
+                                ? "text-rose-600 dark:text-rose-400"
+                                : "text-purple-600 dark:text-purple-400"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        >
+                          {isLend ? "-" : "+"}฿
+                          {tx.amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          })}
+                        </div>
+                        <span className="text-[9px] sm:text-[10px] text-muted-foreground block">
+                          {isLend ? (tx.isForgiven ? "ยกหนี้ให้ (รายจ่าย)" : "เงินให้ยืม") : "เงินรับคืน"}
+                        </span>
                       </div>
-                      <span className="text-[9px] sm:text-[10px] text-muted-foreground block">
-                        {isLend ? "เงินให้ยืม" : "เงินรับคืน"}
-                      </span>
+
+                      {isLend && onToggleForgive && (
+                        tx.isForgiven ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onToggleForgive(tx)}
+                            className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-rose-600 rounded"
+                            title="ยกเลิกการยกหนี้"
+                          >
+                            <Undo2 className="w-3 h-3 mr-0.5" />
+                            <span>ยกเลิก</span>
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onToggleForgive(tx)}
+                            className="h-6 px-1.5 text-[10px] text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded flex items-center gap-1 font-medium"
+                            title="ยกหนี้ให้รายการนี้ (คิดเป็นรายจ่าย)"
+                          >
+                            <HeartHandshake className="w-3 h-3" />
+                            <span>ยกหนี้</span>
+                          </Button>
+                        )
+                      )}
                     </div>
                   </div>
                 );
@@ -499,6 +675,62 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Forgive Person Confirmation Dialog */}
+        {personToForgive && (
+          <Dialog open={!!personToForgive} onOpenChange={() => setPersonToForgive(null)}>
+            <DialogContent className="sm:max-w-md rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-base font-bold flex items-center gap-2">
+                  <HeartHandshake className="w-5 h-5 text-amber-500" />
+                  <span>ยืนยันการยกหนี้ให้</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-3 space-y-3 text-xs sm:text-sm">
+                <p>
+                  คุณแน่ใจหรือไม่ว่าต้องการยกหนี้ให้แก่{" "}
+                  <strong className="text-foreground font-bold">&quot;{personToForgive.name}&quot;</strong>?
+                </p>
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 space-y-1">
+                  <div className="flex justify-between font-semibold">
+                    <span>ยอดหนี้ที่ยกให้:</span>
+                    <span className="text-base text-amber-600 dark:text-amber-400">
+                      ฿{personToForgive.balance.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    ยอดคงค้างจะถูกปรับเป็น 0 และนำยอดนี้ไปคิดเป็น <strong>รายจ่าย</strong> ในงบประมาณของคุณทันที (เงินในบัญชีจริงจะไม่ถูกหักซ้ำ)
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPersonToForgive(null)}
+                  className="rounded-xl text-xs h-8"
+                >
+                  ยกเลิก
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    if (onForgivePerson) {
+                      onForgivePerson(personToForgive.name, personToForgive.balance);
+                    }
+                    setPersonToForgive(null);
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs h-8 gap-1.5 shadow-sm"
+                >
+                  <HeartHandshake className="w-3.5 h-3.5" />
+                  <span>ยืนยันยกหนี้ให้</span>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Footer */}
         <div className="p-3 border-t bg-muted/20 flex justify-end shrink-0">

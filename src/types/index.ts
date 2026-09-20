@@ -47,6 +47,8 @@ export interface Transaction {
   date: string; // ISO string format
   note?: string;
   createdAt: number;
+  isForgiven?: boolean;
+  forgivenAt?: number;
 }
 
 export interface Subscription {
@@ -102,11 +104,20 @@ export const EXTENDED_BANK_LISTS: Record<string, any> = {
   }
 };
 
-export const isLendingExpense = (tx: { type: string; category?: string }) => 
+export const isLendingExpense = (tx: { type: string; category?: string; isForgiven?: boolean }) => 
+  tx.type === "expense" && tx.category === "ให้ยืม" && !tx.isForgiven;
+
+export const isForgivenLending = (tx: { type: string; category?: string; isForgiven?: boolean }) => 
+  tx.type === "expense" && tx.category === "ให้ยืม" && !!tx.isForgiven;
+
+export const isRawLendingExpense = (tx: { type: string; category?: string }) => 
   tx.type === "expense" && tx.category === "ให้ยืม";
 
 export const isLendingIncome = (tx: { type: string; category?: string }) => 
   tx.type === "income" && tx.category === "ได้รับคืน";
 
-export const isLendingTransaction = (tx: { type: string; category?: string }) =>
+export const isLendingTransaction = (tx: { type: string; category?: string; isForgiven?: boolean }) =>
   isLendingExpense(tx) || isLendingIncome(tx);
+
+export const isRawLendingTransaction = (tx: { type: string; category?: string }) =>
+  isRawLendingExpense(tx) || isLendingIncome(tx);
