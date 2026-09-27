@@ -13,7 +13,7 @@ const prompt = Prompt({
 });
 
 export const metadata: Metadata = {
-  title: "เก็บหอม - ผู้ช่วยจัดการเงินของคุณ",
+  title: "Kebhom - ผู้ช่วยจัดการเงินของคุณ",
   description: "แอปพลิเคชันบันทึกรายรับรายจ่ายและจัดการเงินส่วนบุคคล",
 };
 

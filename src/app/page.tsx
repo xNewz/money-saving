@@ -611,9 +611,9 @@ export default function Dashboard() {
             </button>
             <div className="flex flex-col min-w-0 flex-1 justify-center">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <img src="/icon.svg" alt="เก็บหอม" className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" />
+                <img src="/icon.svg" alt="Kebhom" className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" />
                 <h1 className="text-lg sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent truncate pb-0.5">
-                  เก็บหอม
+                  Kebhom
                 </h1>
               </div>
               <p className="text-muted-foreground text-[11px] sm:text-sm font-medium truncate w-full">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
