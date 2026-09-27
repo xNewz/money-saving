@@ -212,7 +212,7 @@ export default function Reports() {
             
             {viewMode === 'monthly' && (
               <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-                <SelectTrigger className="w-[75px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
+                <SelectTrigger className="w-[70px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
                   <SelectValue placeholder="เดือน" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -224,7 +224,7 @@ export default function Reports() {
             )}
 
             <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-              <SelectTrigger className="w-[75px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
+              <SelectTrigger className="w-[65px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
                 <SelectValue placeholder="ปี" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -369,8 +369,8 @@ export default function Reports() {
               <CardTitle className="text-sm sm:text-base font-semibold">สรุปรายรับ - รายจ่ายรายปี</CardTitle>
             </CardHeader>
             <CardContent className="pb-6">
-              {loadingData ? <Skeleton className="h-[300px] w-full" /> : (
-                <div className="h-[300px] w-full">
+              {loadingData ? <Skeleton className="h-[200px] sm:h-[300px] w-full" /> : (
+                <div className="h-[200px] sm:h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={yearlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
@@ -440,8 +440,8 @@ export default function Reports() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pb-6">
-              {loadingData ? <Skeleton className="h-[300px] w-full" /> : (
-                <div className="h-[300px] w-full">
+              {loadingData ? <Skeleton className="h-[200px] sm:h-[300px] w-full" /> : (
+                <div className="h-[200px] sm:h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={yearlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
