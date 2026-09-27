@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Prompt } from "next/font/google";
 import "@/index.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -12,11 +12,26 @@ const prompt = Prompt({
   variable: '--font-sans',
 });
 
+export const viewport: Viewport = {
+  themeColor: "#10b981",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "Kebhom - ผู้ช่วยจัดการเงินของคุณ",
   description: "แอปพลิเคชันบันทึกรายรับรายจ่ายและจัดการเงินส่วนบุคคล",
+  manifest: "/manifest.json",
   icons: {
     icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Kebhom",
   },
 };
 
