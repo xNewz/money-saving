@@ -15,6 +15,9 @@ const prompt = Prompt({
 export const metadata: Metadata = {
   title: "Kebhom - ผู้ช่วยจัดการเงินของคุณ",
   description: "แอปพลิเคชันบันทึกรายรับรายจ่ายและจัดการเงินส่วนบุคคล",
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
