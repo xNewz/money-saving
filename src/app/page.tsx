@@ -9,12 +9,13 @@ import type { Transaction, Account, UserSettings, Debt, Subscription } from "@/t
 import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS, isLendingExpense, isLendingIncome, isLendingTransaction } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff, History, HeartHandshake } from "lucide-react";
+import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff, History, HeartHandshake, UserCircle } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
 import { LendingHistoryModal } from "@/components/LendingHistoryModal";
+import { ProfileModal } from "@/components/ProfileModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ModeToggle } from "@/components/ModeToggle";
 import { format } from "date-fns";
@@ -54,6 +55,7 @@ export default function Dashboard() {
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isLendingHistoryOpen, setIsLendingHistoryOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | undefined>(undefined);
   const [transactionToView, setTransactionToView] = useState<Transaction | undefined>(undefined);
   const [accountToEdit, setAccountToEdit] = useState<Account | undefined>(undefined);
@@ -595,11 +597,20 @@ export default function Dashboard() {
         
         {/* Header */}
         <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">ภาพรวม</h1>
-            <p className="text-muted-foreground text-sm font-medium">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pr-2">
+            <button onClick={() => setIsProfileModalOpen(true)} className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-muted border overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 shadow-sm">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="Profile" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+              ) : (
+                <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+              )}
+            </button>
+            <div className="flex flex-col min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">ภาพรวม</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm font-medium truncate w-full">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
+            </div>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0">
             <Button variant="ghost" size="icon" onClick={toggleHideBalance} className="rounded-full shadow-sm hover:shadow transition-all">
               {hideBalance ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
             </Button>
@@ -624,6 +635,10 @@ export default function Dashboard() {
               <DropdownMenuContent align="end" className="w-56 rounded-xl">
                 <DropdownMenuLabel className="font-semibold text-muted-foreground">เมนูเพิ่มเติม</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsProfileModalOpen(true)} className="rounded-lg cursor-pointer py-2.5">
+                  <UserCircle className="w-4 h-4 mr-2 text-blue-500" />
+                  <span className="font-medium text-blue-600 dark:text-blue-400">แก้ไขโปรไฟล์</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/insights")} className="rounded-lg cursor-pointer py-2.5">
                   <Sparkles className="w-4 h-4 mr-2 text-violet-500" />
                   <span className="text-violet-600 dark:text-violet-400 font-medium">ผู้ช่วยวิเคราะห์ (AI)</span>
@@ -1287,6 +1302,11 @@ export default function Dashboard() {
         accounts={accounts}
         onToggleForgive={handleToggleForgiveDebt}
         onForgivePerson={handleForgivePerson}
+      />
+
+      <ProfileModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
       />
     </div>
   );
