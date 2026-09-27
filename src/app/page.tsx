@@ -18,6 +18,7 @@ import { LendingHistoryModal } from "@/components/LendingHistoryModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { ModeToggle } from "@/components/ModeToggle";
 import { format } from "date-fns";
+import { formatThaiDate } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -914,7 +915,7 @@ export default function Dashboard() {
                       <div className="flex flex-col">
                         <span className="font-semibold text-sm">{lend.note}</span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3" /> ยืมล่าสุด: {format(new Date(lend.latestDate), "d MMM yyyy")}
+                          <Clock className="w-3 h-3" /> ยืมล่าสุด: {formatThaiDate(lend.latestDate)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 sm:gap-3">
@@ -1162,7 +1163,7 @@ export default function Dashboard() {
                                 </span>
                               ) : null}
                               <span className="text-xs text-muted-foreground font-medium truncate flex-1 min-w-0">
-                                {format(new Date(tx.date), "d MMM yyyy")} {tx.note && `• ${tx.note}`}
+                                {formatThaiDate(tx.date)} {tx.note && `• ${tx.note}`}
                               </span>
                             </div>
                           </div>

@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import { formatThaiDate } from "@/lib/utils";
 import type { Transaction, Account } from "@/types";
 import { isLendingTransaction, isForgivenLending } from "@/types";
 import { ArrowRightLeft, Users, HeartHandshake, Undo2 } from "lucide-react";
@@ -167,7 +168,7 @@ export function TransactionDetailsModal({
             <div className="grid grid-cols-3 items-start gap-4">
               <span className="text-muted-foreground font-medium">วันที่:</span>
               <span className="col-span-2 font-semibold">
-                {format(new Date(transaction.date), "d MMM yyyy")}
+                {formatThaiDate(transaction.date)}
               </span>
             </div>
 

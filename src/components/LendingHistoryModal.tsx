@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { formatThaiDate } from "@/lib/utils";
 import type { Transaction, Account } from "@/types";
 import { isRawLendingTransaction, isRawLendingExpense, isLendingIncome, isForgivenLending } from "@/types";
 import {
@@ -332,7 +333,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                             </span>
                             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                               <Calendar className="w-2.5 h-2.5 shrink-0" />
-                              {format(new Date(person.latestDate), "d MMM yyyy")}
+                              {formatThaiDate(person.latestDate)}
                             </span>
                           </div>
                         </div>
@@ -476,7 +477,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                                       )}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                      <span>{format(new Date(tx.date), "d MMM yyyy")}</span>
+                                      <span>{formatThaiDate(tx.date)}</span>
                                       <span>•</span>
                                       <span className="flex items-center gap-0.5 truncate max-w-[100px]">
                                         <Wallet className="w-2.5 h-2.5 shrink-0" />
@@ -602,7 +603,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                         <div className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
                           <span className="flex items-center gap-1 shrink-0">
                             <Calendar className="w-2.5 h-2.5" />
-                            {format(new Date(tx.date), "d MMM yyyy")}
+                            {formatThaiDate(tx.date)}
                           </span>
                           <span>•</span>
                           <span className="flex items-center gap-1 truncate max-w-[120px]">

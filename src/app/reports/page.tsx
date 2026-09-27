@@ -19,6 +19,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, subMonths, isAfter, isBefore, startOfMonth, endOfMonth } from "date-fns";
 import { th } from "date-fns/locale";
+import { formatThaiDate } from "@/lib/utils";
 
 const MONTHS = [
   "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
@@ -329,7 +330,7 @@ export default function Reports() {
                       <div className="flex flex-col">
                         <span className="font-semibold text-sm">{lend.note}</span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                          <Clock className="w-3 h-3" /> ยืมล่าสุด: {format(new Date(lend.latestDate), "d MMM yyyy")}
+                          <Clock className="w-3 h-3" /> ยืมล่าสุด: {formatThaiDate(lend.latestDate)}
                         </span>
                       </div>
                       <div className="flex flex-col items-end">
