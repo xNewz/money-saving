@@ -35,6 +35,8 @@ import { Progress } from "@/components/ui/progress";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658', '#ef5350'];
 
+type MobileChartTab = 'pie' | 'bar';
+
 export default function Dashboard() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
@@ -69,6 +71,8 @@ export default function Dashboard() {
   const [tableDateFilter, setTableDateFilter] = useState<number | 'all'>(new Date().getDate());
   const ITEMS_PER_PAGE = 10;
   const [hideBalance, setHideBalance] = useState<boolean>(false);
+  const [mobileChartsOpen, setMobileChartsOpen] = useState(false);
+  const [mobileChartTab, setMobileChartTab] = useState<MobileChartTab>('pie');
 
   useEffect(() => {
     const saved = localStorage.getItem('hideBalance');
@@ -592,27 +596,27 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-4 md:p-8 transition-colors font-sans">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-3 sm:p-4 md:p-8 transition-colors font-sans">
+      <div className="max-w-5xl mx-auto space-y-4 md:space-y-8">
         
         {/* Header */}
-        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
+        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-3 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 md:py-4 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pr-2">
-            <button onClick={() => setIsProfileModalOpen(true)} className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-muted border overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 shadow-sm">
+            <button onClick={() => setIsProfileModalOpen(true)} className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-muted border overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 shadow-sm">
               {user?.photoURL ? (
                 <img src={user.photoURL} alt="Profile" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               ) : (
-                <UserCircle className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+                <UserCircle className="w-4 h-4 sm:w-6 sm:h-6 text-muted-foreground" />
               )}
             </button>
             <div className="flex flex-col min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">ภาพรวม</h1>
-              <p className="text-muted-foreground text-xs sm:text-sm font-medium truncate w-full">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">ภาพรวม</h1>
+              <p className="text-muted-foreground text-[11px] sm:text-sm font-medium truncate w-full">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
             </div>
           </div>
-          <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0">
-            <Button variant="ghost" size="icon" onClick={toggleHideBalance} className="rounded-full shadow-sm hover:shadow transition-all">
-              {hideBalance ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+          <div className="flex gap-1 items-center flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={toggleHideBalance} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+              {hideBalance ? <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" /> : <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />}
             </Button>
             <ModeToggle />
             
@@ -628,8 +632,8 @@ export default function Dashboard() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full shadow-sm hover:shadow transition-all ml-1">
-                  <Menu className="w-4 h-4" />
+                <Button variant="outline" size="icon" className="rounded-full w-8 h-8 sm:w-9 sm:h-9 shadow-sm hover:shadow transition-all">
+                  <Menu className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl">
@@ -685,52 +689,55 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Floating Action Button (FAB) for Mobile */}
-        <button
-          onClick={() => { setTransactionToEdit(undefined); setIsModalOpen(true); }}
-          className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
+        {/* Floating Action Buttons (Mobile) */}
+        <div className="md:hidden fixed bottom-4 right-3 z-50 flex flex-col gap-2 items-end">
+          <button
+            onClick={() => { setAccountToEdit(undefined); setIsAccountModalOpen(true); }}
+            className="w-10 h-10 bg-secondary text-secondary-foreground rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all border"
+          >
+            <CreditCard className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => { setTransactionToEdit(undefined); setIsModalOpen(true); }}
+            className="w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
 
         {/* My Accounts */}
-        <section className="space-y-3">
+        <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">บัญชีของฉัน</h2>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setIsBudgetModalOpen(true)} className="sm:hidden text-muted-foreground h-8 px-2">
-                <Target className="w-4 h-4 mr-1" /> ตั้งงบ
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setIsAccountModalOpen(true)} className="sm:hidden text-primary h-8 px-2">
-                <Plus className="w-4 h-4 mr-1" /> เพิ่มบัญชี
-              </Button>
-            </div>
+            <h2 className="text-base sm:text-lg font-semibold tracking-tight">บัญชีของฉัน</h2>
+            <Button variant="ghost" size="sm" onClick={() => setIsBudgetModalOpen(true)} className="sm:hidden text-muted-foreground h-7 px-2 text-xs">
+              <Target className="w-3.5 h-3.5 mr-1" /> ตั้งงบ
+            </Button>
           </div>
           
           {loadingAccs ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin]">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-64 shrink-0 rounded-2xl" />)}
+            <div className="flex gap-3 overflow-x-auto pb-3 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin]">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 sm:h-28 w-48 sm:w-64 shrink-0 rounded-xl sm:rounded-2xl" />)}
             </div>
           ) : accounts.length > 0 ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin] px-1 -mx-1">
+            <div className="flex gap-2.5 sm:gap-4 overflow-x-auto pb-3 sm:pb-4 pt-0.5 snap-x snap-mandatory [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-width:thin]">
               {accounts.map(acc => {
                 const bal = getAccountBalance(acc.id);
                 return (
-                  <Card key={acc.id} className="w-64 shrink-0 snap-start shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group border-muted/50 rounded-2xl cursor-pointer" onClick={() => handleEditAccount(acc)}>
-                    <div className="absolute top-0 left-0 w-1.5 h-full transition-all group-hover:w-2" style={{ backgroundColor: acc.color }} />
-                    <CardHeader className="py-4 px-5 flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-semibold truncate flex items-center gap-2 text-muted-foreground">
+                  <Card key={acc.id} className="w-44 sm:w-64 shrink-0 snap-start shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group border-muted/50 rounded-xl sm:rounded-2xl cursor-pointer" onClick={() => handleEditAccount(acc)}>
+                    <div className="absolute top-0 left-0 w-1 sm:w-1.5 h-full transition-all group-hover:w-2" style={{ backgroundColor: acc.color }} />
+                    <CardHeader className="py-2.5 sm:py-4 px-3.5 sm:px-5 flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+                      <CardTitle className="text-xs sm:text-sm font-semibold truncate flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
                         {acc.bankSymbol && EXTENDED_BANK_LISTS[acc.bankSymbol] ? (
-                          <img src={EXTENDED_BANK_LISTS[acc.bankSymbol].icon} alt={EXTENDED_BANK_LISTS[acc.bankSymbol].name} className="w-4 h-4 rounded-sm" />
+                          <img src={EXTENDED_BANK_LISTS[acc.bankSymbol].icon} alt={EXTENDED_BANK_LISTS[acc.bankSymbol].name} className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm" />
                         ) : (
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
+                          <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
                         )}
                         {acc.name}
                       </CardTitle>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                            <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                            <MoreVertical className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-xl">
@@ -743,8 +750,8 @@ export default function Dashboard() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </CardHeader>
-                    <CardContent className="px-5 pb-5">
-                      <div className={`text-2xl font-bold tracking-tight ${bal >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                    <CardContent className="px-3.5 sm:px-5 pb-3 sm:pb-5">
+                      <div className={`text-lg sm:text-2xl font-bold tracking-tight ${bal >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                         {hideBalance ? '฿***' : `฿${bal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </div>
                     </CardContent>
@@ -753,121 +760,121 @@ export default function Dashboard() {
               })}
             </div>
           ) : (
-            <Card className="border-dashed shadow-none bg-transparent rounded-2xl">
-              <CardContent className="flex flex-col items-center justify-center p-8 text-muted-foreground">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                  <CreditCard className="w-6 h-6 opacity-50" />
+            <Card className="border-dashed shadow-none bg-transparent rounded-xl sm:rounded-2xl">
+              <CardContent className="flex flex-col items-center justify-center p-6 sm:p-8 text-muted-foreground">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-muted flex items-center justify-center mb-2">
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 opacity-50" />
                 </div>
-                <p className="font-medium">ยังไม่มีบัญชี</p>
-                <Button variant="link" onClick={() => setIsAccountModalOpen(true)} className="mt-1">สร้างบัญชีแรกของคุณ</Button>
+                <p className="font-medium text-sm">ยังไม่มีบัญชี</p>
+                <Button variant="link" onClick={() => setIsAccountModalOpen(true)} className="mt-1 text-sm">สร้างบัญชีแรกของคุณ</Button>
               </CardContent>
             </Card>
           )}
         </section>
 
         {/* Filter Controls & Summary Cards */}
-        <section className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between bg-card p-2 rounded-2xl border shadow-sm">
-            <div className="flex gap-2 items-center flex-1">
-              <div className="bg-primary/10 p-2 rounded-full text-primary">
-                <Filter className="w-4 h-4" />
-              </div>
-              <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-                <SelectTrigger className="w-[130px] border-none shadow-none bg-transparent hover:bg-muted/50 rounded-full font-medium">
-                  <SelectValue placeholder="เดือน" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {MONTHS.map((m, i) => (
-                    <SelectItem key={i} value={i.toString()} className="rounded-lg">{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-                <SelectTrigger className="w-[90px] border-none shadow-none bg-transparent hover:bg-muted/50 rounded-full font-medium">
-                  <SelectValue placeholder="ปี" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {YEARS.map(y => (
-                    <SelectItem key={y} value={y.toString()} className="rounded-lg">{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <section className="space-y-3 sm:space-y-4">
+          <div className="flex items-center gap-2 bg-card p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border shadow-sm">
+            <div className="bg-primary/10 p-1.5 sm:p-2 rounded-full text-primary shrink-0">
+              <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
+            <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
+              <SelectTrigger className="w-[100px] sm:w-[130px] border-none shadow-none bg-transparent hover:bg-muted/50 rounded-full font-medium text-xs sm:text-sm h-8 sm:h-9">
+                <SelectValue placeholder="เดือน" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {MONTHS.map((m, i) => (
+                  <SelectItem key={i} value={i.toString()} className="rounded-lg">{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
-            <Button onClick={handleExport} variant="ghost" size="sm" className="sm:hidden w-full flex justify-center gap-2 rounded-full text-muted-foreground hover:text-foreground">
-              <Download className="w-4 h-4" /> ส่งออกข้อมูล
+            <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
+              <SelectTrigger className="w-[75px] sm:w-[90px] border-none shadow-none bg-transparent hover:bg-muted/50 rounded-full font-medium text-xs sm:text-sm h-8 sm:h-9">
+                <SelectValue placeholder="ปี" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {YEARS.map(y => (
+                  <SelectItem key={y} value={y.toString()} className="rounded-lg">{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <div className="flex-1" />
+            <Button onClick={handleExport} variant="ghost" size="icon" className="sm:hidden w-8 h-8 rounded-full text-muted-foreground hover:text-foreground shrink-0">
+              <Download className="w-3.5 h-3.5" />
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-primary">ยอดเงินคงเหลือรวม</CardTitle>
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Wallet className="w-4 h-4 text-primary" />
+          {/* Summary Cards - 2x2 on mobile, 4-col on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+            <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl sm:rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-[11px] sm:text-sm font-medium text-primary leading-tight">เงินคงเหลือ</CardTitle>
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                 {loadingTxs || loadingAccs ? (
-                  <Skeleton className="h-8 w-1/2" />
+                  <Skeleton className="h-6 sm:h-8 w-2/3" />
                 ) : (
-                  <div className={`text-3xl font-bold tracking-tight ${overallBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                    {hideBalance ? '฿***' : `฿${overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  <div className={`text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight ${overallBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                    {hideBalance ? '฿***' : `฿${overallBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-500">ยอดหนี้คงเหลือรวม</CardTitle>
-                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+            <Card className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl sm:rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-[11px] sm:text-sm font-medium text-amber-600 dark:text-amber-500 leading-tight">ยอดหนี้</CardTitle>
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-500" />
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                 {loadingTxs ? (
-                  <Skeleton className="h-8 w-1/2" />
+                  <Skeleton className="h-6 sm:h-8 w-2/3" />
                 ) : (
-                  <div className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">
-                    {hideBalance ? '฿***' : `฿${totalOutstandingDebt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  <div className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">
+                    {hideBalance ? '฿***' : `฿${totalOutstandingDebt.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-emerald-600 dark:text-emerald-500">รายรับ (เดือนนี้)</CardTitle>
-                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+            <Card className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl sm:rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-[11px] sm:text-sm font-medium text-emerald-600 dark:text-emerald-500 leading-tight">รายรับ</CardTitle>
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-500" />
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                 {loadingTxs ? (
-                  <Skeleton className="h-8 w-1/2" />
+                  <Skeleton className="h-6 sm:h-8 w-2/3" />
                 ) : (
-                  <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">
-                    {hideBalance ? '฿***' : `+฿${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  <div className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">
+                    {hideBalance ? '฿***' : `+฿${totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent border-destructive/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-destructive">รายจ่าย (เดือนนี้)</CardTitle>
-                <div className="w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center">
-                  <TrendingDown className="w-4 h-4 text-destructive" />
+            <Card className="bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent border-destructive/20 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl sm:rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-[11px] sm:text-sm font-medium text-destructive leading-tight">รายจ่าย</CardTitle>
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                 {loadingTxs ? (
-                  <Skeleton className="h-8 w-1/2" />
+                  <Skeleton className="h-6 sm:h-8 w-2/3" />
                 ) : (
-                  <div className="text-3xl font-bold tracking-tight text-destructive">
-                    {hideBalance ? '฿***' : `-฿${totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  <div className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-destructive">
+                    {hideBalance ? '฿***' : `-฿${totalExpense.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                   </div>
                 )}
               </CardContent>
@@ -875,69 +882,99 @@ export default function Dashboard() {
           </div>
 
           {/* Net Balance Formula Breakdown */}
-          <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary" />
-                สรุปเงินคงเหลือสุทธิ (เดือนนี้)
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-2">
+                <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                สรุปสุทธิ (เดือนนี้)
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                  <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg whitespace-nowrap">รายรับ ฿{totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  <span className="text-muted-foreground">-</span>
-                  <span className="px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg whitespace-nowrap">คงที่ ฿{fixedExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  <span className="text-muted-foreground">-</span>
-                  <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg whitespace-nowrap">ผันแปร ฿{variableExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  <span className="text-muted-foreground">-</span>
-                  <span className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg whitespace-nowrap">ออม/ลงทุน ฿{savingExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  <span className="text-muted-foreground">-</span>
-                  <span className="px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg whitespace-nowrap">จ่ายหนี้ ฿{debtExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  <span className="text-muted-foreground font-bold">=</span>
-                  <span className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap shadow-sm ${netBalanceMonthly >= 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
-                    สุทธิ ฿{netBalanceMonthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              {/* Mobile: vertical list layout */}
+              <div className="flex flex-col gap-1.5 sm:hidden">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">รายรับ</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">+฿{totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-rose-600 dark:text-rose-400 font-medium">คงที่</span>
+                  <span className="font-semibold text-rose-600 dark:text-rose-400">-฿{fixedExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">ผันแปร</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">-฿{variableExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-blue-600 dark:text-blue-400 font-medium">ออม/ลงทุน</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">-฿{savingExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-purple-600 dark:text-purple-400 font-medium">จ่ายหนี้</span>
+                  <span className="font-semibold text-purple-600 dark:text-purple-400">-฿{debtExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </div>
+                <div className="border-t pt-1.5 mt-0.5 flex items-center justify-between">
+                  <span className="text-xs font-bold">สุทธิ</span>
+                  <span className={`text-sm px-2.5 py-1 rounded-lg font-bold ${netBalanceMonthly >= 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                    ฿{netBalanceMonthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
+              </div>
+              {/* Desktop: horizontal badge layout */}
+              <div className="hidden sm:flex flex-wrap items-center gap-2 text-sm font-medium">
+                <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg whitespace-nowrap">รายรับ ฿{totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span className="text-muted-foreground">-</span>
+                <span className="px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg whitespace-nowrap">คงที่ ฿{fixedExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span className="text-muted-foreground">-</span>
+                <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg whitespace-nowrap">ผันแปร ฿{variableExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span className="text-muted-foreground">-</span>
+                <span className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg whitespace-nowrap">ออม/ลงทุน ฿{savingExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span className="text-muted-foreground">-</span>
+                <span className="px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg whitespace-nowrap">จ่ายหนี้ ฿{debtExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                <span className="text-muted-foreground font-bold">=</span>
+                <span className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap shadow-sm ${netBalanceMonthly >= 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>
+                  สุทธิ ฿{netBalanceMonthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </span>
               </div>
             </CardContent>
           </Card>
 
           {/* Outstanding Lends */}
           {outstandingLends.length > 0 && (
-            <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-violet-500" />
+            <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+              <CardHeader className="pb-1 sm:pb-2 flex flex-row items-center justify-between space-y-0 p-3 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4 text-violet-500" />
                   </div>
-                  รายการให้ยืมที่ยังไม่ได้รับคืน
+                  ให้ยืมที่ยังไม่ได้คืน
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsLendingHistoryOpen(true)}
-                  className="text-xs text-muted-foreground hover:text-foreground rounded-lg gap-1.5 h-8 px-2.5 font-medium"
+                  className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground rounded-lg gap-1 sm:gap-1.5 h-7 sm:h-8 px-2 font-medium"
                 >
-                  <History className="w-3.5 h-3.5" />
-                  <span>ดูประวัติทั้งหมด</span>
+                  <History className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">ดูประวัติทั้งหมด</span>
+                  <span className="sm:hidden">ดูทั้งหมด</span>
                 </Button>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
                   {outstandingLends.map(lend => (
-                    <div key={lend.note} className="flex justify-between items-center bg-background p-3 rounded-xl border border-muted/50 shadow-sm">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{lend.note}</span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3" /> ยืมล่าสุด: {formatThaiDate(lend.latestDate)}
+                    <div key={lend.note} className="flex justify-between items-center bg-background p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-muted/50 shadow-sm gap-2">
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-semibold text-xs sm:text-sm truncate">{lend.note}</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                          <span className="truncate">{formatThaiDate(lend.latestDate)}</span>
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                         <div className="flex flex-col items-end">
-                          <span className="font-bold text-violet-500 text-base">฿{lend.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                          <span className="text-[10px] text-muted-foreground mt-0.5">
-                            (ให้ยืม {lend.totalLent.toLocaleString()} / คืนแล้ว {lend.totalReceived.toLocaleString()}{lend.totalForgiven > 0 ? ` / ยกหนี้ ${lend.totalForgiven.toLocaleString()}` : ''})
+                          <span className="font-bold text-violet-500 text-sm sm:text-base">฿{lend.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5 hidden sm:block">
+                            (ยืม {lend.totalLent.toLocaleString()} / คืน {lend.totalReceived.toLocaleString()}{lend.totalForgiven > 0 ? ` / ยกหนี้ ${lend.totalForgiven.toLocaleString()}` : ''})
                           </span>
                         </div>
                         <Button
@@ -945,10 +982,10 @@ export default function Dashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleForgivePerson(lend.note, lend.balance)}
-                          className="text-xs h-7 px-2 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg gap-1 shrink-0"
+                          className="text-[10px] sm:text-xs h-6 sm:h-7 px-1.5 sm:px-2 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md sm:rounded-lg gap-1 shrink-0"
                           title="ยกหนี้ให้ทั้งหมด (คิดเป็นรายจ่าย)"
                         >
-                          <HeartHandshake className="w-3.5 h-3.5" />
+                          <HeartHandshake className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           <span className="hidden sm:inline">ยกหนี้ให้</span>
                         </Button>
                       </div>
@@ -961,149 +998,225 @@ export default function Dashboard() {
 
           {/* Budget Progress Bar */}
           {budget > 0 && (
-            <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex justify-between items-end mb-2">
-                  <div className="space-y-1">
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center flex-wrap gap-2">
-                        <p className="text-sm font-medium text-muted-foreground">งบประมาณรายเดือน</p>
-                        {remainingDailyBudget < 0 && isCurrentMonth ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-500 font-semibold">
-                            เป้าหมายถูกปรับลดเหลือ ฿{futureAverageBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
-                          </span>
-                        ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                            เฉลี่ยไม่เกิน ฿{averageBudgetPerDay.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน
-                          </span>
-                        )}
-                      </div>
-                      {budget > 0 && isCurrentMonth && (
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold ${
-                            remainingDailyBudget >= 0 
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
-                              : 'bg-destructive/10 text-destructive'
-                          }`}>
-                            {remainingDailyBudget >= 0 
-                              ? `วันนี้ใช้งบได้อีก ฿${remainingDailyBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
-                              : `วันนี้ใช้เกินงบเฉลี่ยไป ฿${Math.abs(remainingDailyBudget).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                            }
-                          </span>
-                        </div>
-                      )}
+            <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">งบเดือน</p>
+                      <span className="text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                        {remainingDailyBudget < 0 && isCurrentMonth 
+                          ? `฿${futureAverageBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน`
+                          : `฿${averageBudgetPerDay.toLocaleString(undefined, { maximumFractionDigits: 0 })}/วัน`
+                        }
+                      </span>
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <h3 className="text-2xl font-bold tracking-tight">฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0 })}</h3>
-                      <span className="text-sm text-muted-foreground">/ ฿{budget.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
+                    {budget > 0 && isCurrentMonth && (
+                      <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-semibold inline-block ${
+                        remainingDailyBudget >= 0 
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                          : 'bg-destructive/10 text-destructive'
+                      }`}>
+                        {remainingDailyBudget >= 0 
+                          ? `วันนี้เหลือ ฿${remainingDailyBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
+                          : `เกินไป ฿${Math.abs(remainingDailyBudget).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        }
+                      </span>
+                    )}
+                    <div className="flex items-baseline gap-1.5 sm:gap-2">
+                      <h3 className="text-xl sm:text-2xl font-bold tracking-tight">฿{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0 })}</h3>
+                      <span className="text-xs sm:text-sm text-muted-foreground">/ ฿{budget.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
                     </div>
                   </div>
-                  <div className={`text-sm font-bold ${isOverBudget ? 'text-destructive' : percentUsed > 80 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                    {percentUsed.toFixed(1)}%
+                  <div className={`text-xs sm:text-sm font-bold shrink-0 ml-2 ${isOverBudget ? 'text-destructive' : percentUsed > 80 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                    {percentUsed.toFixed(0)}%
                   </div>
                 </div>
                 <Progress 
                   value={Math.min(percentUsed, 100)} 
-                  className="h-3"
+                  className="h-2.5 sm:h-3"
                   indicatorClassName={isOverBudget ? "bg-destructive" : percentUsed > 80 ? "bg-amber-500" : "bg-emerald-500"}
                 />
                 {isOverBudget && (
-                  <p className="text-xs text-destructive mt-2 font-medium">⚠️ คุณใช้จ่ายเกินงบประมาณที่ตั้งไว้แล้ว!</p>
+                  <p className="text-[10px] sm:text-xs text-destructive mt-1.5 sm:mt-2 font-medium">⚠️ ใช้จ่ายเกินงบแล้ว!</p>
                 )}
               </CardContent>
             </Card>
           )}
         </section>
 
-        {/* Charts Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pie Chart */}
-          <Card className="rounded-2xl shadow-sm border-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">รายจ่ายแบ่งตามหมวดหมู่</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center pb-6">
-              {loadingTxs ? (
-                <Skeleton className="h-[250px] w-[250px] rounded-full" />
-              ) : pieChartData.length > 0 ? (
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={85}
-                        paddingAngle={5}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {pieChartData.map((_entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value: any) => `฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`}
-                        contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
-                      />
-                      <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm font-medium">
-                  ไม่มีรายจ่ายในเดือนนี้
+        {/* Charts Section - Collapsible on mobile, side-by-side on desktop */}
+        <section>
+          {/* Mobile: Collapsible chart with tabs */}
+          <div className="lg:hidden">
+            <Card className="rounded-xl shadow-sm border-muted/50 overflow-hidden">
+              <button
+                onClick={() => setMobileChartsOpen(!mobileChartsOpen)}
+                className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+              >
+                <span className="text-xs font-semibold flex items-center gap-2">
+                  <BarChart2 className="w-3.5 h-3.5 text-primary" />
+                  กราฟสรุป
+                </span>
+                <svg className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${mobileChartsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {mobileChartsOpen && (
+                <div className="border-t">
+                  {/* Tab buttons */}
+                  <div className="flex border-b">
+                    <button
+                      onClick={() => setMobileChartTab('pie')}
+                      className={`flex-1 text-[11px] font-medium py-2 transition-colors ${mobileChartTab === 'pie' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground'}`}
+                    >
+                      หมวดหมู่
+                    </button>
+                    <button
+                      onClick={() => setMobileChartTab('bar')}
+                      className={`flex-1 text-[11px] font-medium py-2 transition-colors ${mobileChartTab === 'bar' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground'}`}
+                    >
+                      รายวัน
+                    </button>
+                  </div>
+                  <div className="p-3">
+                    {mobileChartTab === 'pie' ? (
+                      loadingTxs ? (
+                        <Skeleton className="h-[200px] w-[200px] mx-auto rounded-full" />
+                      ) : pieChartData.length > 0 ? (
+                        <div className="h-[220px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={5} dataKey="value" stroke="none">
+                                {pieChartData.map((_entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip 
+                                formatter={(value: any) => `฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`}
+                                contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                              />
+                              <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="h-[200px] flex items-center justify-center text-muted-foreground text-xs font-medium">
+                          ไม่มีรายจ่ายในเดือนนี้
+                        </div>
+                      )
+                    ) : (
+                      loadingTxs ? (
+                        <Skeleton className="h-[200px] w-full" />
+                      ) : filteredTransactions.length > 0 ? (
+                        <div className="h-[220px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={dailyData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
+                              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} dy={5} />
+                              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(val) => `฿${val}`} />
+                              <Tooltip 
+                                formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
+                                labelFormatter={(label) => `วันที่ ${label}`}
+                                contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '10px', border: '1px solid hsl(var(--border))', fontSize: '11px' }}
+                              />
+                              <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '5px' }} />
+                              <Bar dataKey="income" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                              <Bar dataKey="expense" fill="#ef4444" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="h-[200px] flex items-center justify-center text-muted-foreground text-xs font-medium">
+                          ไม่มีข้อมูลในเดือนนี้
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Bar Chart */}
-          <Card className="rounded-2xl shadow-sm border-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">รายงานรายวัน</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center pb-6">
-              {loadingTxs ? (
-                <Skeleton className="h-[250px] w-full" />
-              ) : filteredTransactions.length > 0 ? (
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(val) => `฿${val}`} />
-                      <Tooltip 
-                        formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
-                        labelFormatter={(label) => `วันที่ ${label} ${MONTHS[selectedMonth]}`}
-                        contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 500 }}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
-                        cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
-                      />
-                      <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                      <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={24} />
-                      <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={24} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm font-medium">
-                  ไม่มีข้อมูลในเดือนนี้
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Desktop: Side-by-side charts */}
+          <div className="hidden lg:grid grid-cols-2 gap-6">
+            <Card className="rounded-2xl shadow-sm border-muted/50">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">รายจ่ายแบ่งตามหมวดหมู่</CardTitle>
+              </CardHeader>
+              <CardContent className="flex justify-center pb-6">
+                {loadingTxs ? (
+                  <Skeleton className="h-[250px] w-[250px] rounded-full" />
+                ) : pieChartData.length > 0 ? (
+                  <div className="h-[250px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={5} dataKey="value" stroke="none">
+                          {pieChartData.map((_entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: any) => `฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`}
+                          contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
+                        />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm font-medium">
+                    ไม่มีรายจ่ายในเดือนนี้
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl shadow-sm border-muted/50">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">รายงานรายวัน</CardTitle>
+              </CardHeader>
+              <CardContent className="flex justify-center pb-6">
+                {loadingTxs ? (
+                  <Skeleton className="h-[250px] w-full" />
+                ) : filteredTransactions.length > 0 ? (
+                  <div className="h-[250px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(val) => `฿${val}`} />
+                        <Tooltip 
+                          formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
+                          labelFormatter={(label) => `วันที่ ${label} ${MONTHS[selectedMonth]}`}
+                          contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 500 }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
+                          cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                        />
+                        <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                        <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={24} />
+                        <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={24} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm font-medium">
+                    ไม่มีข้อมูลในเดือนนี้
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </section>
 
         {/* Transactions List */}
         <section>
-          <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-muted/50 py-3 px-4 sm:px-6 flex flex-row justify-between items-center space-y-0">
-              <CardTitle className="text-base font-semibold">รายการธุรกรรมล่าสุด</CardTitle>
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden">
+            <CardHeader className="bg-muted/30 border-b border-muted/50 py-2.5 sm:py-3 px-3 sm:px-6 flex flex-row justify-between items-center space-y-0">
+              <CardTitle className="text-sm sm:text-base font-semibold">ธุรกรรมล่าสุด</CardTitle>
               <Select value={tableDateFilter.toString()} onValueChange={(val) => { setTableDateFilter(val === 'all' ? 'all' : parseInt(val)); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[125px] h-8 text-xs border border-muted/50 shadow-sm bg-background hover:bg-muted/50 rounded-full font-medium">
+                <SelectTrigger className="w-[100px] sm:w-[125px] h-7 sm:h-8 text-[10px] sm:text-xs border border-muted/50 shadow-sm bg-background hover:bg-muted/50 rounded-full font-medium">
                   <SelectValue placeholder="วันที่" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl max-h-[200px]">
@@ -1118,9 +1231,9 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="p-0">
               {loadingTxs ? (
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                   {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                    <Skeleton key={i} className="h-14 sm:h-16 w-full rounded-lg sm:rounded-xl" />
                   ))}
                 </div>
               ) : filteredTransactions.length > 0 ? (
@@ -1135,13 +1248,13 @@ export default function Dashboard() {
                       <div 
                         key={tx.id} 
                         onClick={() => handleViewTx(tx)}
-                        className="group flex justify-between items-center p-4 sm:px-6 hover:bg-muted/30 transition-colors duration-200 relative gap-3 sm:gap-4 cursor-pointer"
+                        className="group flex justify-between items-center p-2.5 sm:p-4 sm:px-6 hover:bg-muted/30 transition-colors duration-200 relative gap-2 sm:gap-4 cursor-pointer"
                       >
-                        {acc && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: isTransfer ? '#3b82f6' : acc.color }} />}
+                        {acc && <div className="absolute top-0 left-0 w-0.5 sm:w-1 h-full" style={{ backgroundColor: isTransfer ? '#3b82f6' : acc.color }} />}
                         
-                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 pl-2">
-                          {/* Category Icon / Initial */}
-                          <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
+                        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 pl-1 sm:pl-2">
+                          {/* Category Icon - smaller on mobile */}
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
                             isTransfer 
                               ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
                               : isLendingTransaction(tx)
@@ -1150,16 +1263,38 @@ export default function Dashboard() {
                                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
                                   : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
                           }`}>
-                            {isTransfer ? <ArrowRightLeft className="w-4 h-4" /> : isLendingTransaction(tx) ? <Users className="w-4 h-4" /> : tx.category.substring(0, 1)}
+                            {isTransfer ? <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : isLendingTransaction(tx) ? <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : tx.category.substring(0, 1)}
                           </div>
                           
                           <div className="flex flex-col min-w-0 flex-1">
-                            <span className="font-semibold text-foreground tracking-tight truncate">
+                            <span className="font-semibold text-foreground tracking-tight truncate text-xs sm:text-sm">
                               {isTransfer ? 'โอนเงิน' : ((tx.category === 'ให้ยืม' || tx.category === 'ได้รับคืน') && tx.note) ? `${tx.category}: ${tx.note}` : tx.category}
                             </span>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap min-w-0">
+                            {/* Mobile: simplified subtitle */}
+                            <div className="flex items-center gap-1.5 mt-0.5 min-w-0 sm:hidden">
+                              <span className="text-[10px] text-muted-foreground font-medium truncate">
+                                {formatThaiDate(tx.date, "d MMM HH:mm")}
+                              </span>
                               {isTransfer ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-medium truncate max-w-[120px] sm:max-w-[200px]">
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 font-medium truncate max-w-[80px]">
+                                  {acc?.name}→{toAcc?.name}
+                                </span>
+                              ) : acc ? (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium truncate max-w-[60px]">
+                                  {acc.name}
+                                </span>
+                              ) : null}
+                              {tx.category === 'ให้ยืม' && tx.isForgiven && (
+                                <HeartHandshake className="w-3 h-3 text-rose-500 shrink-0" />
+                              )}
+                              {isLendingTransaction(tx) && !tx.isForgiven && (
+                                <span className="text-[9px] px-1 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300">ไม่นับงบ</span>
+                              )}
+                            </div>
+                            {/* Desktop: full detail subtitle */}
+                            <div className="hidden sm:flex items-center gap-2 mt-0.5 flex-wrap min-w-0">
+                              {isTransfer ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-medium truncate max-w-[200px]">
                                   {acc?.name} ➡️ {toAcc?.name}
                                 </span>
                               ) : acc ? (
@@ -1184,9 +1319,9 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                        <div className="flex items-center gap-1 sm:gap-4 shrink-0">
                           <div className="flex flex-col items-end">
-                            <div className={`font-bold tracking-tight text-right ${
+                            <div className={`font-bold tracking-tight text-right text-xs sm:text-base ${
                               isTransfer 
                                 ? 'text-blue-600 dark:text-blue-500' 
                                 : isLendingTransaction(tx)
@@ -1195,24 +1330,20 @@ export default function Dashboard() {
                                     ? 'text-emerald-600 dark:text-emerald-500' 
                                     : 'text-foreground'
                             }`}>
-                              {isTransfer ? '' : isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})}
+                              {isTransfer ? '' : isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                             </div>
                             {isLendingTransaction(tx) && (
-                              <span className="text-[10px] text-muted-foreground">
-                                {tx.category === 'ให้ยืม' ? 'เงินให้ยืม' : 'เงินรับคืน'}
-                              </span>
-                            )}
-                            {tx.category === 'ให้ยืม' && tx.isForgiven && (
-                              <span className="text-[10px] text-rose-600 dark:text-rose-400">
-                                ยกหนี้ให้ (รายจ่าย)
+                              <span className="text-[9px] sm:text-[10px] text-muted-foreground">
+                                {tx.category === 'ให้ยืม' ? 'ให้ยืม' : 'รับคืน'}
                               </span>
                             )}
                           </div>
                           
+                          {/* Desktop: dropdown menu */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground">
-                                <MoreVertical className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-7 w-7 sm:h-8 sm:w-8 rounded-full text-muted-foreground hover:text-foreground hidden sm:flex">
+                                <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="rounded-xl">
@@ -1241,22 +1372,22 @@ export default function Dashboard() {
                     );
                   })}
                   {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-4 py-4 bg-muted/10">
-                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-full hover:bg-muted/50">ก่อนหน้า</Button>
-                      <span className="text-sm font-medium text-muted-foreground">หน้า {currentPage} จาก {totalPages}</span>
-                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-full hover:bg-muted/50">ถัดไป</Button>
+                    <div className="flex justify-center items-center gap-3 sm:gap-4 py-3 sm:py-4 bg-muted/10">
+                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-full hover:bg-muted/50 h-7 sm:h-8 text-xs sm:text-sm px-3">ก่อนหน้า</Button>
+                      <span className="text-xs sm:text-sm font-medium text-muted-foreground">{currentPage}/{totalPages}</span>
+                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-full hover:bg-muted/50 h-7 sm:h-8 text-xs sm:text-sm px-3">ถัดไป</Button>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center py-12 text-muted-foreground flex flex-col items-center">
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                    <TrendingDown className="w-8 h-8 opacity-40" />
+                <div className="text-center py-8 sm:py-12 text-muted-foreground flex flex-col items-center px-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-full flex items-center justify-center mb-3 sm:mb-4">
+                    <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8 opacity-40" />
                   </div>
-                  <p className="mb-2 font-medium text-foreground">ไม่พบรายการธุรกรรมใน{tableDateFilter === 'all' ? 'เดือนนี้' : `วันที่ ${tableDateFilter}`}</p>
-                  <p className="text-sm">เพิ่มรายการแรกของคุณเพื่อเริ่มต้นติดตามการใช้จ่าย</p>
+                  <p className="mb-1 sm:mb-2 font-medium text-foreground text-sm sm:text-base">ไม่พบรายการใน{tableDateFilter === 'all' ? 'เดือนนี้' : `วันที่ ${tableDateFilter}`}</p>
+                  <p className="text-xs sm:text-sm">เพิ่มรายการแรกเพื่อเริ่มติดตามการใช้จ่าย</p>
                   {accounts.length === 0 && (
-                    <p className="text-sm text-destructive mt-2">กรุณาสร้างบัญชีก่อนเพิ่มรายการธุรกรรม</p>
+                    <p className="text-xs sm:text-sm text-destructive mt-2">กรุณาสร้างบัญชีก่อนเพิ่มรายการ</p>
                   )}
                 </div>
               )}
