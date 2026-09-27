@@ -289,20 +289,20 @@ export default function Insights() {
         
         {/* Header */}
         <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-3 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 md:py-4 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9 shrink-0">
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <div className="flex flex-col">
-              <h1 className="text-base sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2">
-                ผู้ช่วยวิเคราะห์ <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500" />
+            <div className="flex flex-col min-w-0">
+              <h1 className="text-base sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2 truncate">
+                ผู้ช่วยวิเคราะห์ <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500 shrink-0" />
               </h1>
-              <p className="text-muted-foreground text-[10px] sm:text-sm font-medium">AI Insights & Analytics</p>
+              <p className="text-muted-foreground text-[10px] sm:text-sm font-medium truncate">AI Insights & Analytics</p>
             </div>
           </div>
-          <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-end">
+          <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-end shrink-0 pl-2">
             <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-              <SelectTrigger className="w-[75px] sm:w-[110px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
+              <SelectTrigger className="w-[80px] sm:w-[110px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm px-2 sm:px-3">
                 <SelectValue placeholder="เดือน" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -312,7 +312,7 @@ export default function Insights() {
               </SelectContent>
             </Select>
             <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-              <SelectTrigger className="w-[65px] sm:w-[85px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
+              <SelectTrigger className="w-[75px] sm:w-[85px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm px-2 sm:px-3">
                 <SelectValue placeholder="ปี" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">

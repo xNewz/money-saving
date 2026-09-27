@@ -188,18 +188,18 @@ export default function Reports() {
         
         {/* Header */}
         <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-3 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 md:py-4 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9 shrink-0">
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <div className="flex flex-col">
-              <h1 className="text-base sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <div className="flex flex-col min-w-0">
+              <h1 className="text-base sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">
                 รายงานเชิงลึก
               </h1>
-              <p className="text-muted-foreground text-[10px] sm:text-sm font-medium">ภาพรวมรายปีและการวิเคราะห์</p>
+              <p className="text-muted-foreground text-[10px] sm:text-sm font-medium truncate">ภาพรวมรายปีและการวิเคราะห์</p>
             </div>
           </div>
-          <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-end">
+          <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-end shrink-0 pl-2">
             <div className="hidden sm:flex bg-muted/50 p-1 rounded-xl mr-1">
               <Button size="sm" variant={viewMode === 'monthly' ? 'default' : 'ghost'} onClick={() => setViewMode('monthly')} className="rounded-lg h-8 text-xs font-medium">รายเดือน</Button>
               <Button size="sm" variant={viewMode === 'yearly' ? 'default' : 'ghost'} onClick={() => setViewMode('yearly')} className="rounded-lg h-8 text-xs font-medium">รายปี</Button>
@@ -212,7 +212,7 @@ export default function Reports() {
             
             {viewMode === 'monthly' && (
               <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-                <SelectTrigger className="w-[70px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
+                <SelectTrigger className="w-[80px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
                   <SelectValue placeholder="เดือน" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -224,7 +224,7 @@ export default function Reports() {
             )}
 
             <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-              <SelectTrigger className="w-[65px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
+              <SelectTrigger className="w-[75px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
                 <SelectValue placeholder="ปี" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
