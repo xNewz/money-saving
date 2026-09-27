@@ -110,60 +110,61 @@ export default function SubscriptionsPage() {
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 p-4 md:p-8 font-sans pb-24 md:pb-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 p-3 sm:p-4 md:p-8 font-sans pb-24 md:pb-8">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         
-        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full">
-              <ArrowLeft className="w-5 h-5" />
+        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-3 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 md:py-4 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight">รายจ่ายประจำ (Subscriptions)</h1>
+            <h1 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight">รายจ่ายประจำ</h1>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-1 sm:gap-2 items-center">
             <ModeToggle />
-            <Button onClick={() => { setSubToEdit(undefined); setIsModalOpen(true); }} className="rounded-full shadow-md gap-2">
-              <PlusCircle className="w-4 h-4" />
+            <Button onClick={() => { setSubToEdit(undefined); setIsModalOpen(true); }} className="rounded-full shadow-md gap-1.5 sm:gap-2 h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm">
+              <PlusCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">เพิ่มรายการ</span>
+              <span className="sm:hidden">เพิ่ม</span>
             </Button>
           </div>
         </header>
 
         {/* Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="rounded-2xl shadow-sm border-muted/50 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-primary">ยอดรายจ่ายเฉลี่ยต่อเดือน</CardTitle>
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-[10px] sm:text-sm font-medium text-primary leading-tight">ต่อเดือน</CardTitle>
             </CardHeader>
-            <CardContent>
-              {loadingData ? <Skeleton className="h-8 w-1/2" /> : (
-                <div className="text-3xl font-bold">฿{monthlyTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              {loadingData ? <Skeleton className="h-6 sm:h-8 w-2/3" /> : (
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold">฿{monthlyTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
               )}
             </CardContent>
           </Card>
           
-          <Card className="rounded-2xl shadow-sm border-muted/50 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-500">ยอดรายจ่ายรวมต่อปี</CardTitle>
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-[10px] sm:text-sm font-medium text-amber-600 dark:text-amber-500 leading-tight">ต่อปี</CardTitle>
             </CardHeader>
-            <CardContent>
-              {loadingData ? <Skeleton className="h-8 w-1/2" /> : (
-                <div className="text-3xl font-bold text-amber-600 dark:text-amber-500">฿{yearlyTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              {loadingData ? <Skeleton className="h-6 sm:h-8 w-2/3" /> : (
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-amber-600 dark:text-amber-500">฿{yearlyTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
               )}
             </CardContent>
           </Card>
         </div>
 
         {/* Subscriptions List */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold tracking-tight">รายการทั้งหมด</h2>
+        <section className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-lg font-semibold tracking-tight">รายการทั้งหมด</h2>
           
           {loadingData ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
+            <div className="space-y-2 sm:space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 sm:h-24 w-full rounded-xl sm:rounded-2xl" />)}
             </div>
           ) : subscriptions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
               {subscriptions.map(sub => {
                 const Icon = sub.icon && ICONS[sub.icon] ? ICONS[sub.icon] : CreditCard;
                 const acc = accounts.find(a => a.id === sub.accountId);
@@ -176,32 +177,32 @@ export default function SubscriptionsPage() {
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 
                 return (
-                  <Card key={sub.id} className={`rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md ${!sub.isActive ? 'opacity-60 grayscale-[50%]' : ''}`}>
-                    <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: sub.color }} />
-                    <CardContent className="p-5 pl-6 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 flex-1 overflow-hidden">
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: `${sub.color}20` }}>
-                          <Icon className="w-6 h-6" style={{ color: sub.color }} />
+                  <Card key={sub.id} className={`rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md ${!sub.isActive ? 'opacity-60 grayscale-[50%]' : ''}`}>
+                    <div className="absolute top-0 left-0 w-1 sm:w-1.5 h-full" style={{ backgroundColor: sub.color }} />
+                    <CardContent className="p-3.5 sm:p-5 pl-4 sm:pl-6 flex items-center justify-between gap-2 sm:gap-4">
+                      <div className="flex items-center gap-2.5 sm:gap-4 flex-1 overflow-hidden">
+                        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${sub.color}20` }}>
+                          <Icon className="w-4 h-4 sm:w-6 sm:h-6" style={{ color: sub.color }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg truncate">{sub.name}</h3>
-                          <div className="text-sm text-muted-foreground flex items-center gap-2 truncate">
-                            <Calendar className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">{sub.cycle === 'monthly' ? 'รายเดือน' : 'รายปี'} • บัญชี: {acc?.name || 'ไม่ระบุ'}</span>
+                          <h3 className="font-semibold text-sm sm:text-lg truncate">{sub.name}</h3>
+                          <div className="text-[10px] sm:text-sm text-muted-foreground flex items-center gap-1.5 sm:gap-2 truncate">
+                            <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                            <span className="truncate">{sub.cycle === 'monthly' ? 'รายเดือน' : 'รายปี'} • {acc?.name || 'ไม่ระบุ'}</span>
                           </div>
                           {sub.isActive ? (
-                            <div className={`text-xs font-medium mt-1 ${diffDays <= 3 ? 'text-destructive' : 'text-emerald-500'}`}>
-                              {diffDays === 0 ? 'ตัดบิลวันนี้' : diffDays < 0 ? 'เลยกำหนด (รอหักอัตโนมัติ)' : `ตัดบิลในอีก ${diffDays} วัน`}
+                            <div className={`text-[10px] sm:text-xs font-medium mt-0.5 sm:mt-1 ${diffDays <= 3 ? 'text-destructive' : 'text-emerald-500'}`}>
+                              {diffDays === 0 ? 'ตัดบิลวันนี้' : diffDays < 0 ? 'เลยกำหนด' : `อีก ${diffDays} วัน`}
                             </div>
                           ) : (
-                            <div className="text-xs font-medium mt-1 text-muted-foreground">ไม่ได้เปิดใช้งาน</div>
+                            <div className="text-[10px] sm:text-xs font-medium mt-0.5 sm:mt-1 text-muted-foreground">ปิดใช้งาน</div>
                           )}
                         </div>
                       </div>
                       
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <div className="font-bold text-lg">
-                          ฿{sub.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      <div className="flex flex-col items-end gap-0.5 sm:gap-1 shrink-0">
+                        <div className="font-bold text-sm sm:text-lg">
+                          ฿{sub.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

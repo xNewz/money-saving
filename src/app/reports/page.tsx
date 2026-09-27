@@ -183,31 +183,36 @@ export default function Reports() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-4 md:p-8 transition-colors font-sans">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-3 sm:p-4 md:p-8 transition-colors font-sans">
+      <div className="max-w-5xl mx-auto space-y-4 md:space-y-8">
         
         {/* Header */}
-        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full shadow-sm">
-              <ArrowLeft className="w-5 h-5" />
+        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-3 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 md:py-4 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <h1 className="text-base sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 รายงานเชิงลึก
               </h1>
-              <p className="text-muted-foreground text-sm font-medium">ภาพรวมรายปีและการวิเคราะห์</p>
+              <p className="text-muted-foreground text-[10px] sm:text-sm font-medium">ภาพรวมรายปีและการวิเคราะห์</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center flex-wrap justify-end">
+          <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-end">
             <div className="hidden sm:flex bg-muted/50 p-1 rounded-xl mr-1">
               <Button size="sm" variant={viewMode === 'monthly' ? 'default' : 'ghost'} onClick={() => setViewMode('monthly')} className="rounded-lg h-8 text-xs font-medium">รายเดือน</Button>
               <Button size="sm" variant={viewMode === 'yearly' ? 'default' : 'ghost'} onClick={() => setViewMode('yearly')} className="rounded-lg h-8 text-xs font-medium">รายปี</Button>
             </div>
+            {/* Mobile view mode toggle */}
+            <div className="flex sm:hidden bg-muted/50 p-0.5 rounded-lg">
+              <Button size="sm" variant={viewMode === 'monthly' ? 'default' : 'ghost'} onClick={() => setViewMode('monthly')} className="rounded-md h-7 text-[10px] px-2 font-medium">เดือน</Button>
+              <Button size="sm" variant={viewMode === 'yearly' ? 'default' : 'ghost'} onClick={() => setViewMode('yearly')} className="rounded-md h-7 text-[10px] px-2 font-medium">ปี</Button>
+            </div>
             
             {viewMode === 'monthly' && (
               <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-                <SelectTrigger className="w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-xl font-medium">
+                <SelectTrigger className="w-[75px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
                   <SelectValue placeholder="เดือน" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -219,8 +224,7 @@ export default function Reports() {
             )}
 
             <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-              <SelectTrigger className="w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-xl font-medium">
-                <Calendar className="w-4 h-4 mr-2 text-muted-foreground hidden sm:block" />
+              <SelectTrigger className="w-[75px] sm:w-[90px] border shadow-sm bg-card hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm h-8 sm:h-9">
                 <SelectValue placeholder="ปี" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -234,44 +238,44 @@ export default function Reports() {
         </header>
 
         {/* Summary Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 shadow-sm rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-600 dark:text-emerald-500">รายรับรวม{viewMode === 'yearly' ? `ปี ${selectedYear}` : `${MONTHS[selectedMonth]} ${selectedYear}`}</CardTitle>
-              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+        <section className="grid grid-cols-3 gap-2 sm:gap-4">
+          <Card className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 shadow-sm rounded-xl sm:rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-[10px] sm:text-sm font-medium text-emerald-600 dark:text-emerald-500 leading-tight">รายรับ</CardTitle>
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-500" />
             </CardHeader>
-            <CardContent>
-              {loadingData ? <Skeleton className="h-8 w-1/2" /> : (
-                <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">
-                  +฿{totalYearIncome.toLocaleString()}
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              {loadingData ? <Skeleton className="h-6 sm:h-8 w-2/3" /> : (
+                <div className="text-sm sm:text-2xl lg:text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">
+                  +฿{totalYearIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent border-destructive/20 shadow-sm rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-destructive">รายจ่ายรวม{viewMode === 'yearly' ? `ปี ${selectedYear}` : `${MONTHS[selectedMonth]} ${selectedYear}`}</CardTitle>
-              <TrendingDown className="w-4 h-4 text-destructive" />
+          <Card className="bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent border-destructive/20 shadow-sm rounded-xl sm:rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-[10px] sm:text-sm font-medium text-destructive leading-tight">รายจ่าย</CardTitle>
+              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
             </CardHeader>
-            <CardContent>
-              {loadingData ? <Skeleton className="h-8 w-1/2" /> : (
-                <div className="text-3xl font-bold tracking-tight text-destructive">
-                  -฿{totalYearExpense.toLocaleString()}
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              {loadingData ? <Skeleton className="h-6 sm:h-8 w-2/3" /> : (
+                <div className="text-sm sm:text-2xl lg:text-3xl font-bold tracking-tight text-destructive">
+                  -฿{totalYearExpense.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               )}
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-sm rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-primary">เงินคงเหลือสุทธิ (Cashflow)</CardTitle>
-              <Wallet className="w-4 h-4 text-primary" />
+          <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-sm rounded-xl sm:rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-[10px] sm:text-sm font-medium text-primary leading-tight">สุทธิ</CardTitle>
+              <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
             </CardHeader>
-            <CardContent>
-              {loadingData ? <Skeleton className="h-8 w-1/2" /> : (
-                <div className={`text-3xl font-bold tracking-tight ${totalYearIncome - totalYearExpense >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-                  ฿{(totalYearIncome - totalYearExpense).toLocaleString()}
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              {loadingData ? <Skeleton className="h-6 sm:h-8 w-2/3" /> : (
+                <div className={`text-sm sm:text-2xl lg:text-3xl font-bold tracking-tight ${totalYearIncome - totalYearExpense >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                  ฿{(totalYearIncome - totalYearExpense).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               )}
             </CardContent>
@@ -280,17 +284,27 @@ export default function Reports() {
 
         {/* Net Balance Formula Breakdown */}
         <section>
-          <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary" />
-                สรุปเงินคงเหลือสุทธิ (รวมตลอด{viewMode === 'yearly' ? `ปี ${selectedYear}` : `เดือน ${MONTHS[selectedMonth]} ${selectedYear}`})
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-2">
+                <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                สรุปสุทธิ
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {loadingData ? <Skeleton className="h-10 w-full" /> : (
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                <>
+                  {/* Mobile: vertical list */}
+                  <div className="flex flex-col gap-1.5 sm:hidden">
+                    <div className="flex justify-between text-xs"><span className="text-emerald-600 dark:text-emerald-400 font-medium">รายรับ</span><span className="font-semibold text-emerald-600 dark:text-emerald-400">+฿{totalYearIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-rose-600 dark:text-rose-400 font-medium">คงที่</span><span className="font-semibold text-rose-600 dark:text-rose-400">-฿{groupMap["รายจ่ายคงที่"].toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-amber-600 dark:text-amber-400 font-medium">ผันแปร</span><span className="font-semibold text-amber-600 dark:text-amber-400">-฿{groupMap["รายจ่ายผันแปร"].toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-blue-600 dark:text-blue-400 font-medium">ออม/ลงทุน</span><span className="font-semibold text-blue-600 dark:text-blue-400">-฿{groupMap["เงินออม/เงินลงทุน"].toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-purple-600 dark:text-purple-400 font-medium">ผ่อนหนี้</span><span className="font-semibold text-purple-600 dark:text-purple-400">-฿{groupMap["เงินผ่อนหนี้"].toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div className="border-t pt-1.5 mt-0.5 flex justify-between"><span className="text-xs font-bold">สุทธิ</span><span className={`text-sm px-2.5 py-1 rounded-lg font-bold ${(totalYearIncome - totalYearExpense) >= 0 ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}`}>฿{(totalYearIncome - totalYearExpense).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                  </div>
+                  {/* Desktop: horizontal badges */}
+                  <div className="hidden sm:flex flex-wrap items-center gap-2 text-sm font-medium">
                     <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg whitespace-nowrap">รายรับ ฿{totalYearIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                     <span className="text-muted-foreground">-</span>
                     <span className="px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg whitespace-nowrap">คงที่ ฿{groupMap["รายจ่ายคงที่"].toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
@@ -305,7 +319,7 @@ export default function Reports() {
                       สุทธิ ฿{(totalYearIncome - totalYearExpense).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                   </div>
-                </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -314,29 +328,29 @@ export default function Reports() {
         {/* Outstanding Lends Section */}
         {outstandingLends.length > 0 && (
           <section>
-            <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-violet-500" />
+            <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden bg-card/50">
+              <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4 text-violet-500" />
                   </div>
-                  รายการให้ยืมที่ยังไม่ได้รับคืน (ยอดคงค้างทั้งหมด)
+                  ให้ยืมคงค้าง
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {outstandingLends.map(lend => (
-                    <div key={lend.note} className="flex justify-between items-center bg-background p-4 rounded-xl border border-muted/50 shadow-sm">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{lend.note}</span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                          <Clock className="w-3 h-3" /> ยืมล่าสุด: {formatThaiDate(lend.latestDate)}
+                    <div key={lend.note} className="flex justify-between items-center bg-background p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-muted/50 shadow-sm gap-2">
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-semibold text-xs sm:text-sm truncate">{lend.note}</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" /> <span className="truncate">{formatThaiDate(lend.latestDate)}</span>
                         </span>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <span className="font-bold text-violet-500 text-base">฿{lend.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                        <span className="text-[10px] text-muted-foreground mt-1">
-                          (ให้ยืม {lend.totalLent.toLocaleString()} / คืนแล้ว {lend.totalReceived.toLocaleString()})
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className="font-bold text-violet-500 text-sm sm:text-base">฿{lend.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                        <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5 hidden sm:block">
+                          (ยืม {lend.totalLent.toLocaleString()} / คืน {lend.totalReceived.toLocaleString()})
                         </span>
                       </div>
                     </div>
@@ -348,11 +362,11 @@ export default function Reports() {
         )}
 
         {/* Charts Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
           {/* Yearly Overview Bar Chart */}
-          <Card className="lg:col-span-2 rounded-2xl shadow-sm border-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">สรุปรายรับ - รายจ่ายรายปี</CardTitle>
+          <Card className="lg:col-span-2 rounded-xl sm:rounded-2xl shadow-sm border-muted/50">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base font-semibold">สรุปรายรับ - รายจ่ายรายปี</CardTitle>
             </CardHeader>
             <CardContent className="pb-6">
               {loadingData ? <Skeleton className="h-[300px] w-full" /> : (
@@ -379,11 +393,11 @@ export default function Reports() {
           </Card>
 
           {/* Top Expenses */}
-          <Card className="rounded-2xl shadow-sm border-muted/50 flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <PieChartIcon className="w-5 h-5 text-muted-foreground" />
-                รายจ่ายสูงสุด 5 อันดับแรก
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 flex flex-col">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
+                <PieChartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+                Top 5 รายจ่าย
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
@@ -418,11 +432,11 @@ export default function Reports() {
           </Card>
 
           {/* Cashflow Line Chart */}
-          <Card className="lg:col-span-3 rounded-2xl shadow-sm border-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                กระแสเงินสด (Cashflow) ประจำเดือน
+          <Card className="lg:col-span-3 rounded-xl sm:rounded-2xl shadow-sm border-muted/50">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                กระแสเงินสด
               </CardTitle>
             </CardHeader>
             <CardContent className="pb-6">
@@ -454,21 +468,21 @@ export default function Reports() {
         </section>
 
         {/* Category Breakdowns */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="rounded-2xl shadow-sm border-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold text-emerald-600 dark:text-emerald-500">รายรับตามหมวดหมู่</CardTitle>
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base font-semibold text-emerald-600 dark:text-emerald-500">รายรับตามหมวดหมู่</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {loadingData ? <Skeleton className="h-[200px] w-full" /> : sortedIncomeCategories.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {sortedIncomeCategories.map((item, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
-                      <div className="flex justify-between items-center text-sm">
+                      <div className="flex justify-between items-center text-xs sm:text-sm">
                         <span className="font-medium truncate">{item.name}</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-500">+฿{item.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-500">+฿{item.value.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
                       </div>
-                      <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-muted/50 rounded-full h-1.5 sm:h-2 overflow-hidden">
                         <div 
                           className="bg-emerald-500/80 h-full rounded-full transition-all duration-500" 
                           style={{ width: `${totalYearIncome > 0 ? (item.value / totalYearIncome) * 100 : 0}%` }}
@@ -478,27 +492,27 @@ export default function Reports() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-6 sm:py-8 text-muted-foreground text-sm">
                   <p>ไม่มีรายรับใน{viewMode === 'yearly' ? 'ปี' : 'เดือน'}นี้</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl shadow-sm border-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold text-destructive">รายจ่ายตามหมวดหมู่</CardTitle>
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base font-semibold text-destructive">รายจ่ายตามหมวดหมู่</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {loadingData ? <Skeleton className="h-[200px] w-full" /> : sortedExpenseCategories.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {sortedExpenseCategories.map((item, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
-                      <div className="flex justify-between items-center text-sm">
+                      <div className="flex justify-between items-center text-xs sm:text-sm">
                         <span className="font-medium truncate">{item.name}</span>
-                        <span className="font-bold text-destructive">-฿{item.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        <span className="font-bold text-destructive">-฿{item.value.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
                       </div>
-                      <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-muted/50 rounded-full h-1.5 sm:h-2 overflow-hidden">
                         <div 
                           className="bg-destructive/80 h-full rounded-full transition-all duration-500" 
                           style={{ width: `${totalYearExpense > 0 ? (item.value / totalYearExpense) * 100 : 0}%` }}
@@ -508,7 +522,7 @@ export default function Reports() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-6 sm:py-8 text-muted-foreground text-sm">
                   <p>ไม่มีรายจ่ายใน{viewMode === 'yearly' ? 'ปี' : 'เดือน'}นี้</p>
                 </div>
               )}

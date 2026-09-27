@@ -117,30 +117,30 @@ export default function TaxCalculator() {
   }, [netIncome]);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-4 md:p-8 transition-colors font-sans">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-3 sm:p-4 md:p-8 transition-colors font-sans">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         
         {/* Header */}
-        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full hover:bg-muted">
-              <ChevronLeft className="w-5 h-5" />
+        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-3 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 md:py-4 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <div className="flex flex-col">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent flex items-center gap-2">
-                <Calculator className="w-6 h-6 text-primary" />
-                เครื่องมือคำนวณภาษี
+              <h1 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2">
+                <Calculator className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                คำนวณภาษี
               </h1>
-              <p className="text-muted-foreground text-xs md:text-sm font-medium">ประเมินภาษีเงินได้บุคคลธรรมดาเบื้องต้น</p>
+              <p className="text-muted-foreground text-[10px] sm:text-xs md:text-sm font-medium">ประเมินภาษีเงินได้เบื้องต้น</p>
             </div>
           </div>
           <ModeToggle />
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           {/* Inputs Section */}
-          <div className="lg:col-span-5 space-y-6">
-            <Card className="rounded-2xl shadow-sm border-muted/50">
+          <div className="lg:col-span-5 space-y-4 sm:space-y-6">
+            <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50">
               <CardHeader className="pb-4 border-b border-muted/20">
                 <CardTitle className="text-lg">ข้อมูลรายได้และลดหย่อน</CardTitle>
                 <CardDescription>กรอกข้อมูลตลอดทั้งปีเพื่อการคำนวณที่แม่นยำ</CardDescription>
@@ -251,21 +251,21 @@ export default function TaxCalculator() {
           </div>
 
           {/* Results Section */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-7 space-y-3 sm:space-y-6">
             
             {/* Filing Alert */}
-            <Card className={`rounded-2xl border ${mustFile ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} shadow-sm`}>
-              <CardContent className="p-4 flex gap-4 items-start">
+            <Card className={`rounded-xl sm:rounded-2xl border ${mustFile ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} shadow-sm`}>
+              <CardContent className="p-3 sm:p-4 flex gap-2.5 sm:gap-4 items-start">
                 {mustFile ? (
                   <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
                 ) : (
                   <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <h3 className={`font-semibold ${mustFile ? 'text-amber-700 dark:text-amber-500' : 'text-emerald-700 dark:text-emerald-500'}`}>
-                    {mustFile ? "คุณถึงเกณฑ์ต้อง 'ยื่นภาษี'" : "รายได้ของคุณยังไม่ถึงเกณฑ์ต้องยื่นภาษี"}
+                  <h3 className={`font-semibold text-xs sm:text-base ${mustFile ? 'text-amber-700 dark:text-amber-500' : 'text-emerald-700 dark:text-emerald-500'}`}>
+                    {mustFile ? "ถึงเกณฑ์ต้องยื่นภาษี" : "ยังไม่ถึงเกณฑ์ต้องยื่นภาษี"}
                   </h3>
-                  <p className={`text-sm mt-1 ${mustFile ? 'text-amber-600/80 dark:text-amber-500/80' : 'text-emerald-600/80 dark:text-emerald-500/80'}`}>
+                  <p className={`text-[11px] sm:text-sm mt-0.5 sm:mt-1 ${mustFile ? 'text-amber-600/80 dark:text-amber-500/80' : 'text-emerald-600/80 dark:text-emerald-500/80'}`}>
                     {mustFile 
                       ? "ถึงแม้ว่าจะคำนวณแล้วไม่ต้องเสียภาษี (ยอดภาษีเป็น 0) แต่คุณมีหน้าที่ต้องยื่นแบบแสดงรายการตามกฎหมาย" 
                       : "รายได้ตลอดปีของคุณยังไม่ถึงเกณฑ์ขั้นต่ำที่สรรพากรกำหนด จึงไม่ต้องยื่นแบบแสดงรายการ"}
@@ -275,22 +275,22 @@ export default function TaxCalculator() {
             </Card>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="rounded-2xl shadow-sm border-muted/50 bg-card">
-                <CardContent className="p-4 sm:p-5 flex flex-col justify-center items-center text-center space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">เงินได้สุทธิ</span>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight">฿{netIncome.toLocaleString()}</span>
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 bg-card">
+                <CardContent className="p-3 sm:p-5 flex flex-col justify-center items-center text-center space-y-0.5 sm:space-y-1">
+                  <span className="text-[10px] sm:text-sm font-medium text-muted-foreground">เงินได้สุทธิ</span>
+                  <span className="text-lg sm:text-3xl font-bold tracking-tight">฿{netIncome.toLocaleString()}</span>
                   <span className="text-[10px] sm:text-xs text-muted-foreground mt-2">
                     (รายได้ - หักค่าใช้จ่าย ฿{expenseDeduction.toLocaleString()} - ลดหย่อน ฿{numDeductions.toLocaleString()})
                   </span>
                 </CardContent>
               </Card>
               
-              <Card className="rounded-2xl shadow-sm border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-                <CardContent className="p-4 sm:p-5 flex flex-col justify-center items-center text-center space-y-1">
-                  <span className="text-sm font-medium text-primary">ภาษีที่ต้องชำระ</span>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                    ฿{taxCalculation.tax.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
+              <Card className="rounded-xl sm:rounded-2xl shadow-sm border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+                <CardContent className="p-3 sm:p-5 flex flex-col justify-center items-center text-center space-y-0.5 sm:space-y-1">
+                  <span className="text-[10px] sm:text-sm font-medium text-primary">ภาษีที่ต้องชำระ</span>
+                  <span className="text-lg sm:text-3xl font-bold tracking-tight text-foreground">
+                    ฿{taxCalculation.tax.toLocaleString(undefined, {maximumFractionDigits: 0})}
                   </span>
                   {taxCalculation.tax > 0 && totalIncome > 0 && (
                     <span className="text-xs text-primary font-medium mt-2 bg-primary/10 px-2 py-0.5 rounded-full">
@@ -302,9 +302,9 @@ export default function TaxCalculator() {
             </div>
 
             {/* Tax Brackets Breakdown */}
-            <Card className="rounded-2xl shadow-sm border-muted/50 overflow-hidden">
-              <CardHeader className="bg-muted/30 border-b border-muted/50 py-4">
-                <CardTitle className="text-base font-semibold">รายละเอียดการคำนวณภาษี (แบบขั้นบันได)</CardTitle>
+            <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden">
+              <CardHeader className="bg-muted/30 border-b border-muted/50 py-3 sm:py-4 px-3 sm:px-6">
+                <CardTitle className="text-sm sm:text-base font-semibold">คำนวณขั้นบันได</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">

@@ -284,25 +284,25 @@ export default function Insights() {
 }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-4 md:p-8 transition-colors font-sans">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-24 md:pb-8 p-3 sm:p-4 md:p-8 transition-colors font-sans">
+      <div className="max-w-5xl mx-auto space-y-4 md:space-y-8">
         
         {/* Header */}
-        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-4 -mx-4 px-4 md:mx-0 md:px-0 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full shadow-sm">
-              <ArrowLeft className="w-5 h-5" />
+        <header className="flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-40 py-3 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 md:py-4 md:relative md:bg-transparent md:backdrop-blur-none border-b md:border-none">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent flex items-center gap-2">
-                ผู้ช่วยวิเคราะห์ <Sparkles className="w-5 h-5 text-fuchsia-500" />
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2">
+                ผู้ช่วยวิเคราะห์ <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500" />
               </h1>
-              <p className="text-muted-foreground text-sm font-medium">AI Insights & Analytics Dashboard</p>
+              <p className="text-muted-foreground text-[11px] sm:text-sm font-medium">AI Insights & Analytics</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center flex-wrap justify-end">
+          <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-end">
             <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-              <SelectTrigger className="w-[110px] h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-xl font-medium hidden sm:flex">
+              <SelectTrigger className="w-[85px] sm:w-[110px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
                 <SelectValue placeholder="เดือน" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -312,7 +312,7 @@ export default function Insights() {
               </SelectContent>
             </Select>
             <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-              <SelectTrigger className="w-[85px] h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-xl font-medium hidden sm:flex">
+              <SelectTrigger className="w-[70px] sm:w-[85px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
                 <SelectValue placeholder="ปี" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -326,61 +326,61 @@ export default function Insights() {
         </header>
 
         {/* AI Alerts Section */}
-        <section className="space-y-4">
-            <div className="flex items-center gap-2 text-lg font-semibold">
-                <Brain className="w-5 h-5 text-violet-500" />
-                <h2>ข้อความวิเคราะห์จาก AI ประจำเดือนนี้</h2>
+        <section className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 text-sm sm:text-lg font-semibold">
+                <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
+                <h2>วิเคราะห์จาก AI</h2>
             </div>
 
             {loadingData ? (
-                <div className="space-y-3">
-                    <Skeleton className="h-24 w-full rounded-2xl" />
-                    <Skeleton className="h-24 w-full rounded-2xl" />
+                <div className="space-y-2 sm:space-y-3">
+                    <Skeleton className="h-20 sm:h-24 w-full rounded-xl sm:rounded-2xl" />
+                    <Skeleton className="h-20 sm:h-24 w-full rounded-xl sm:rounded-2xl" />
                 </div>
             ) : alerts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
                     {alerts.map(alert => (
-                        <div key={alert.id} className={`p-5 rounded-2xl border shadow-sm flex gap-4 items-start transition-all hover:shadow-md ${getAlertStyle(alert.type)}`}>
-                            <div className="bg-background/80 backdrop-blur-sm p-2 rounded-xl shadow-sm shrink-0">
+                        <div key={alert.id} className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl border shadow-sm flex gap-2.5 sm:gap-4 items-start transition-all hover:shadow-md ${getAlertStyle(alert.type)}`}>
+                            <div className="bg-background/80 backdrop-blur-sm p-1.5 sm:p-2 rounded-lg sm:rounded-xl shadow-sm shrink-0">
                                 {alert.icon}
                             </div>
-                            <div className="flex flex-col gap-1">
-                                <h3 className={`font-semibold ${getAlertTitleStyle(alert.type)}`}>{alert.title}</h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">{alert.message}</p>
+                            <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                                <h3 className={`font-semibold text-xs sm:text-base ${getAlertTitleStyle(alert.type)}`}>{alert.title}</h3>
+                                <p className="text-[11px] sm:text-sm text-muted-foreground leading-relaxed">{alert.message}</p>
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
-                <Card className="border-dashed shadow-none bg-transparent rounded-2xl">
-                    <CardContent className="flex flex-col items-center justify-center p-8 text-muted-foreground">
-                        <Brain className="w-12 h-12 opacity-20 mb-3" />
-                        <p className="font-medium">ยังไม่มีข้อมูลเพียงพอให้ AI วิเคราะห์</p>
+                <Card className="border-dashed shadow-none bg-transparent rounded-xl sm:rounded-2xl">
+                    <CardContent className="flex flex-col items-center justify-center p-6 sm:p-8 text-muted-foreground">
+                        <Brain className="w-10 h-10 sm:w-12 sm:h-12 opacity-20 mb-2 sm:mb-3" />
+                        <p className="font-medium text-sm">ยังไม่มีข้อมูลเพียงพอ</p>
                     </CardContent>
                 </Card>
             )}
         </section>
 
         {/* Overview Stats */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <Card className="bg-gradient-to-br from-background to-muted/20 shadow-sm rounded-2xl overflow-hidden border-muted/50">
-                <div className="h-1 w-full bg-primary/20" />
-                <CardContent className="p-6">
-                    <div className="flex flex-col gap-1">
-                        <p className="text-sm font-medium text-muted-foreground">รวมรายจ่ายเดือนนี้</p>
-                        {loadingData ? <Skeleton className="h-10 w-1/2 mt-1" /> : (
-                            <h2 className="text-3xl font-bold tracking-tight">฿{currentMonthTotal.toLocaleString(undefined, {minimumFractionDigits: 0})}</h2>
+        <section className="grid grid-cols-2 gap-2 sm:gap-4">
+             <Card className="bg-gradient-to-br from-background to-muted/20 shadow-sm rounded-xl sm:rounded-2xl overflow-hidden border-muted/50">
+                <div className="h-0.5 sm:h-1 w-full bg-primary/20" />
+                <CardContent className="p-3 sm:p-6">
+                    <div className="flex flex-col gap-0.5 sm:gap-1">
+                        <p className="text-[10px] sm:text-sm font-medium text-muted-foreground">เดือนนี้</p>
+                        {loadingData ? <Skeleton className="h-7 sm:h-10 w-2/3 mt-1" /> : (
+                            <h2 className="text-lg sm:text-3xl font-bold tracking-tight">฿{currentMonthTotal.toLocaleString(undefined, {maximumFractionDigits: 0})}</h2>
                         )}
                     </div>
                 </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-background to-muted/20 shadow-sm rounded-2xl overflow-hidden border-muted/50">
-                <div className="h-1 w-full bg-muted" />
-                <CardContent className="p-6">
-                     <div className="flex flex-col gap-1">
-                        <p className="text-sm font-medium text-muted-foreground">รวมรายจ่ายเดือนที่แล้ว</p>
-                        {loadingData ? <Skeleton className="h-10 w-1/2 mt-1" /> : (
-                            <h2 className="text-3xl font-bold tracking-tight text-muted-foreground">฿{lastMonthTotal.toLocaleString(undefined, {minimumFractionDigits: 0})}</h2>
+            <Card className="bg-gradient-to-br from-background to-muted/20 shadow-sm rounded-xl sm:rounded-2xl overflow-hidden border-muted/50">
+                <div className="h-0.5 sm:h-1 w-full bg-muted" />
+                <CardContent className="p-3 sm:p-6">
+                     <div className="flex flex-col gap-0.5 sm:gap-1">
+                        <p className="text-[10px] sm:text-sm font-medium text-muted-foreground">เดือนที่แล้ว</p>
+                        {loadingData ? <Skeleton className="h-7 sm:h-10 w-2/3 mt-1" /> : (
+                            <h2 className="text-lg sm:text-3xl font-bold tracking-tight text-muted-foreground">฿{lastMonthTotal.toLocaleString(undefined, {maximumFractionDigits: 0})}</h2>
                         )}
                     </div>
                 </CardContent>
@@ -389,9 +389,9 @@ export default function Insights() {
 
         {/* Charts Section */}
         <section>
-          <Card className="rounded-2xl shadow-sm border-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">เปรียบเทียบรายจ่ายแต่ละหมวดหมู่ (เดือนนี้ vs เดือนที่แล้ว)</CardTitle>
+          <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base font-semibold">เปรียบเทียบรายจ่ายตามหมวดหมู่</CardTitle>
             </CardHeader>
             <CardContent className="pb-6">
               {loadingData ? (
