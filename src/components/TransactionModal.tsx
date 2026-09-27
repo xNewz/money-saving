@@ -31,7 +31,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   const [category, setCategory] = useState("");
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
-  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [note, setNote] = useState("");
   const [debtId, setDebtId] = useState("");
   const [debts, setDebts] = useState<Debt[]>([]);
@@ -93,7 +93,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setType(existingTransaction.type);
       setAmount(existingTransaction.amount.toString());
       setCategory(existingTransaction.category);
-      setDate(existingTransaction.date);
+      setDate(format(new Date(existingTransaction.date), "yyyy-MM-dd'T'HH:mm"));
       setNote(existingTransaction.note || "");
       setAccountId(existingTransaction.accountId || "");
       setToAccountId(existingTransaction.toAccountId || "");
@@ -103,7 +103,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setType("expense");
       setAmount("");
       setCategory("");
-      setDate(format(new Date(), "yyyy-MM-dd"));
+      setDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
       setNote("");
       setToAccountId("");
       setDebtId("");
@@ -360,9 +360,9 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
           )}
 
           <div className="space-y-2">
-            <Label>วันที่</Label>
+            <Label>วันที่และเวลา</Label>
             <Input
-              type="date"
+              type="datetime-local"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required

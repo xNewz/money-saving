@@ -1163,7 +1163,7 @@ export default function Dashboard() {
                                 </span>
                               ) : null}
                               <span className="text-xs text-muted-foreground font-medium truncate flex-1 min-w-0">
-                                {formatThaiDate(tx.date)} {tx.note && `• ${tx.note}`}
+                                {formatThaiDate(tx.date, "d MMM yyyy HH:mm")} {tx.note && `• ${tx.note}`}
                               </span>
                             </div>
                           </div>

@@ -168,7 +168,7 @@ export function TransactionDetailsModal({
             <div className="grid grid-cols-3 items-start gap-4">
               <span className="text-muted-foreground font-medium">วันที่:</span>
               <span className="col-span-2 font-semibold">
-                {formatThaiDate(transaction.date)}
+                {formatThaiDate(transaction.date, "d MMM yyyy HH:mm")}
               </span>
             </div>
 
