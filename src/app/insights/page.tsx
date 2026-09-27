@@ -294,15 +294,15 @@ export default function Insights() {
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <div className="flex flex-col">
-              <h1 className="text-lg sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2">
+              <h1 className="text-base sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2">
                 ผู้ช่วยวิเคราะห์ <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-500" />
               </h1>
-              <p className="text-muted-foreground text-[11px] sm:text-sm font-medium">AI Insights & Analytics</p>
+              <p className="text-muted-foreground text-[10px] sm:text-sm font-medium">AI Insights & Analytics</p>
             </div>
           </div>
           <div className="flex gap-1 sm:gap-2 items-center flex-wrap justify-end">
             <Select value={selectedMonth.toString()} onValueChange={(val) => setSelectedMonth(parseInt(val))}>
-              <SelectTrigger className="w-[85px] sm:w-[110px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
+              <SelectTrigger className="w-[75px] sm:w-[110px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
                 <SelectValue placeholder="เดือน" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -312,7 +312,7 @@ export default function Insights() {
               </SelectContent>
             </Select>
             <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-              <SelectTrigger className="w-[70px] sm:w-[85px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
+              <SelectTrigger className="w-[65px] sm:w-[85px] h-8 sm:h-9 border shadow-sm bg-background hover:bg-muted/50 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
                 <SelectValue placeholder="ปี" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
