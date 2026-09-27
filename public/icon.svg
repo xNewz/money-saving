@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" fill="none"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="coin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#eab308" />
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx="128" cy="128" r="116" fill="url(#bg)" />
+  
+  <!-- Shadow under coin -->
+  <ellipse cx="128" cy="185" rx="40" ry="10" fill="#047857" opacity="0.6"/>
+  
+  <!-- Coin -->
+  <circle cx="128" cy="155" r="40" fill="url(#coin)" />
+  <circle cx="128" cy="155" r="28" fill="none" stroke="#ca8a04" stroke-width="4" opacity="0.5"/>
+  <path d="M128 135 V175" stroke="#ca8a04" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+  
+  <!-- Sprout -->
+  <!-- Left Leaf -->
+  <path d="M128 120 C100 120 75 90 95 70 C110 55 128 90 128 120 Z" fill="#ecfccb" />
+  <!-- Right Leaf -->
+  <path d="M128 115 C150 115 175 80 160 55 C140 40 128 85 128 115 Z" fill="#d9f99d" />
+  <!-- Stem -->
+  <path d="M128 150 C128 130 128 110 128 100" fill="none" stroke="#bef264" stroke-width="6" stroke-linecap="round"/>
+</svg>

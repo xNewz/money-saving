@@ -609,8 +609,13 @@ export default function Dashboard() {
                 <UserCircle className="w-4 h-4 sm:w-6 sm:h-6 text-muted-foreground" />
               )}
             </button>
-            <div className="flex flex-col min-w-0 flex-1">
-              <h1 className="text-lg sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">ภาพรวม</h1>
+            <div className="flex flex-col min-w-0 flex-1 justify-center">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <img src="/icon.svg" alt="เก็บหอม" className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" />
+                <h1 className="text-lg sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent truncate pb-0.5">
+                  เก็บหอม
+                </h1>
+              </div>
               <p className="text-muted-foreground text-[11px] sm:text-sm font-medium truncate w-full">ยินดีต้อนรับ, <span className="text-foreground">{user?.displayName || "ผู้ใช้"}</span></p>
             </div>
           </div>

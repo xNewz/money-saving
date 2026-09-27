@@ -13,8 +13,8 @@ const prompt = Prompt({
 });
 
 export const metadata: Metadata = {
-  title: "Money Saving App",
-  description: "Personal finance tracking app",
+  title: "เก็บหอม - ผู้ช่วยจัดการเงินของคุณ",
+  description: "แอปพลิเคชันบันทึกรายรับรายจ่ายและจัดการเงินส่วนบุคคล",
 };
 
 export default function RootLayout({
