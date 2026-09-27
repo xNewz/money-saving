@@ -151,24 +151,24 @@ export default function TaxCalculator() {
                 <div className="flex bg-muted/50 p-1 rounded-xl">
                   <button 
                     onClick={() => setDataSource("manual")}
-                    className={`flex-1 text-sm font-medium py-2 rounded-lg transition-colors ${dataSource === 'manual' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`flex-1 text-xs sm:text-sm font-medium py-1.5 sm:py-2 rounded-lg transition-colors ${dataSource === 'manual' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                   >
                     กรอกข้อมูลเอง
                   </button>
                   <button 
                     onClick={() => setDataSource("auto")}
-                    className={`flex-1 text-sm font-medium py-2 rounded-lg transition-colors ${dataSource === 'auto' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`flex-1 text-xs sm:text-sm font-medium py-1.5 sm:py-2 rounded-lg transition-colors ${dataSource === 'auto' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                   >
                     ดึงจากระบบปีนี้ ({currentYear})
                   </button>
                 </div>
 
                 {/* Salary */}
-                <div className={`space-y-3 transition-opacity ${dataSource === 'auto' ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <div className="flex justify-between">
-                    <Label className="text-sm font-semibold">รายได้ประจำ (เงินเดือน)</Label>
+                <div className={`space-y-2 sm:space-y-3 transition-opacity ${dataSource === 'auto' ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-xs sm:text-sm font-semibold">รายได้ประจำ (เงินเดือน)</Label>
                     <Select value={salaryType} onValueChange={(val: any) => setSalaryType(val)}>
-                      <SelectTrigger className="h-6 w-[120px] text-xs border-none bg-muted/50 rounded-full px-3">
+                      <SelectTrigger className="h-6 w-[90px] sm:w-[120px] text-[10px] sm:text-xs border-none bg-muted/50 rounded-full px-2 sm:px-3">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
@@ -184,16 +184,16 @@ export default function TaxCalculator() {
                       placeholder="0" 
                       value={dataSource === 'auto' ? 0 : salary} 
                       onChange={(e) => setSalary(e.target.value)}
-                      className="pl-8 rounded-xl h-11"
+                      className="pl-8 rounded-xl h-10 sm:h-11 text-sm sm:text-base"
                       disabled={dataSource === 'auto'}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground text-right">รวมทั้งปี: ฿{totalSalaryYearly.toLocaleString()}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground text-right">รวมทั้งปี: ฿{totalSalaryYearly.toLocaleString()}</p>
                 </div>
 
                 {/* Other Income */}
-                <div className={`space-y-3 transition-opacity ${dataSource === 'auto' ? 'opacity-100 pointer-events-none' : ''}`}>
-                  <Label className="text-sm font-semibold">รายได้ทางอื่น (ค้าขาย, ฟรีแลนซ์ ฯลฯ)</Label>
+                <div className={`space-y-2 sm:space-y-3 transition-opacity ${dataSource === 'auto' ? 'opacity-100 pointer-events-none' : ''}`}>
+                  <Label className="text-xs sm:text-sm font-semibold">รายได้ทางอื่น (ค้าขาย, ฟรีแลนซ์ ฯลฯ)</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">฿</span>
                     <Input 
@@ -201,13 +201,13 @@ export default function TaxCalculator() {
                       placeholder="0" 
                       value={dataSource === 'auto' ? autoIncome : otherIncome} 
                       onChange={(e) => setOtherIncome(e.target.value)}
-                      className={`pl-8 rounded-xl h-11 ${dataSource === 'auto' ? 'bg-primary/5 border-primary/20 text-primary font-semibold' : ''}`}
+                      className={`pl-8 rounded-xl h-10 sm:h-11 text-sm sm:text-base ${dataSource === 'auto' ? 'bg-primary/5 border-primary/20 text-primary font-semibold' : ''}`}
                       disabled={dataSource === 'auto'}
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">ต่อปี</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[10px] sm:text-sm">ต่อปี</span>
                   </div>
                   {dataSource === 'auto' && (
-                    <p className="text-xs text-primary font-medium mt-1">
+                    <p className="text-[10px] sm:text-xs text-primary font-medium mt-1">
                       * ดึงรวมรายรับทั้งหมดจากรายการธุรกรรมในปี {currentYear}
                     </p>
                   )}
@@ -216,33 +216,33 @@ export default function TaxCalculator() {
 
 
                 {/* Marital Status */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold">สถานภาพการสมรส (เพื่อเช็คเกณฑ์ยื่นภาษี)</Label>
+                <div className="space-y-2 sm:space-y-3">
+                  <Label className="text-xs sm:text-sm font-semibold">สถานภาพการสมรส (เพื่อเช็คเกณฑ์ยื่นภาษี)</Label>
                   <Select value={maritalStatus} onValueChange={(val: any) => setMaritalStatus(val)}>
-                    <SelectTrigger className="rounded-xl h-11">
+                    <SelectTrigger className="rounded-xl h-10 sm:h-11 text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="single" className="rounded-lg">โสด / ยื่นแยก</SelectItem>
-                      <SelectItem value="married" className="rounded-lg">สมรส (ยื่นรวม)</SelectItem>
+                      <SelectItem value="single" className="text-xs sm:text-sm rounded-lg">โสด / ยื่นแยก</SelectItem>
+                      <SelectItem value="married" className="text-xs sm:text-sm rounded-lg">สมรส (ยื่นรวม)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Deductions */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold">รวมค่าลดหย่อนภาษี</Label>
+                <div className="space-y-2 sm:space-y-3">
+                  <Label className="text-xs sm:text-sm font-semibold">รวมค่าลดหย่อนภาษี</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">฿</span>
                     <Input 
                       type="number" 
                       value={deductions} 
                       onChange={(e) => setDeductions(e.target.value)}
-                      className="pl-8 rounded-xl h-11 bg-primary/5 border-primary/20 focus-visible:ring-primary/30"
+                      className="pl-8 rounded-xl h-10 sm:h-11 text-sm sm:text-base bg-primary/5 border-primary/20 focus-visible:ring-primary/30"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    * ระบบใส่ค่าเริ่มต้น 60,000 บาท (ค่าลดหย่อนส่วนตัว) ให้แล้ว สามารถบวกประกัน กองทุน ฯลฯ เพิ่มได้เลย
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
+                    * ระบบใส่ค่าเริ่มต้น 60,000 บาท ให้แล้ว สามารถบวกประกัน กองทุน ฯลฯ เพิ่มได้เลย
                   </p>
                 </div>
 
@@ -277,23 +277,23 @@ export default function TaxCalculator() {
             {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 bg-card">
-                <CardContent className="p-3 sm:p-5 flex flex-col justify-center items-center text-center space-y-0.5 sm:space-y-1">
+                <CardContent className="p-3 sm:p-5 flex flex-col justify-center items-center text-center space-y-1 sm:space-y-1.5 h-full">
                   <span className="text-[10px] sm:text-sm font-medium text-muted-foreground">เงินได้สุทธิ</span>
                   <span className="text-lg sm:text-3xl font-bold tracking-tight">฿{netIncome.toLocaleString()}</span>
-                  <span className="text-[10px] sm:text-xs text-muted-foreground mt-2">
-                    (รายได้ - หักค่าใช้จ่าย ฿{expenseDeduction.toLocaleString()} - ลดหย่อน ฿{numDeductions.toLocaleString()})
+                  <span className="text-[9px] sm:text-xs text-muted-foreground leading-tight px-1">
+                    (หักใช้จ่าย ฿{expenseDeduction.toLocaleString()} & ลดหย่อน ฿{numDeductions.toLocaleString()})
                   </span>
                 </CardContent>
               </Card>
               
               <Card className="rounded-xl sm:rounded-2xl shadow-sm border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-                <CardContent className="p-3 sm:p-5 flex flex-col justify-center items-center text-center space-y-0.5 sm:space-y-1">
+                <CardContent className="p-3 sm:p-5 flex flex-col justify-center items-center text-center space-y-1 sm:space-y-1.5 h-full">
                   <span className="text-[10px] sm:text-sm font-medium text-primary">ภาษีที่ต้องชำระ</span>
-                  <span className="text-lg sm:text-3xl font-bold tracking-tight text-foreground">
+                  <span className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
                     ฿{taxCalculation.tax.toLocaleString(undefined, {maximumFractionDigits: 0})}
                   </span>
                   {taxCalculation.tax > 0 && totalIncome > 0 && (
-                    <span className="text-xs text-primary font-medium mt-2 bg-primary/10 px-2 py-0.5 rounded-full">
+                    <span className="text-[9px] sm:text-xs text-primary font-medium mt-1 bg-primary/10 px-2 py-0.5 rounded-full">
                       คิดเป็น {((taxCalculation.tax / totalIncome) * 100).toFixed(1)}% ของรายได้
                     </span>
                   )}
@@ -308,22 +308,22 @@ export default function TaxCalculator() {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-muted-foreground bg-muted/20 uppercase">
+                  <table className="w-full text-[10px] sm:text-sm text-left">
+                    <thead className="text-[9px] sm:text-xs text-muted-foreground bg-muted/20 uppercase">
                       <tr>
-                        <th className="px-4 py-3 font-medium">ช่วงเงินได้สุทธิ (บาท)</th>
-                        <th className="px-4 py-3 font-medium text-right">อัตราภาษี</th>
-                        <th className="px-4 py-3 font-medium text-right">เงินได้ในขั้นนี้</th>
-                        <th className="px-4 py-3 font-medium text-right">ภาษีขั้นนี้</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium">ช่วงเงินได้สุทธิ (บาท)</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-right">อัตรา</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-right">เงินได้ในขั้นนี้</th>
+                        <th className="px-2 py-2 sm:px-4 sm:py-3 font-medium text-right">ภาษีขั้นนี้</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-muted/30">
                       {taxCalculation.breakdown.map((b, i) => (
                         <tr key={i} className={`hover:bg-muted/10 transition-colors ${b.tax > 0 ? 'bg-primary/5' : ''}`}>
-                          <td className="px-4 py-3 whitespace-nowrap">{b.label}</td>
-                          <td className="px-4 py-3 text-right">{(b.rate * 100).toFixed(0)}%</td>
-                          <td className="px-4 py-3 text-right font-medium text-foreground">฿{b.amount.toLocaleString()}</td>
-                          <td className={`px-4 py-3 text-right font-semibold ${b.tax > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap">{b.label}</td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right">{(b.rate * 100).toFixed(0)}%</td>
+                          <td className="px-2 py-2 sm:px-4 sm:py-3 text-right font-medium text-foreground">฿{b.amount.toLocaleString()}</td>
+                          <td className={`px-2 py-2 sm:px-4 sm:py-3 text-right font-semibold ${b.tax > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
                             ฿{b.tax.toLocaleString()}
                           </td>
                         </tr>
