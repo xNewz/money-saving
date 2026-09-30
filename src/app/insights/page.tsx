@@ -398,7 +398,7 @@ export default function Insights() {
                   <Skeleton className="h-[350px] w-full" />
               ) : chartData.length > 0 ? (
                 <div className="h-[400px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
                       <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} angle={-30} textAnchor="end" />

@@ -371,7 +371,7 @@ export default function Reports() {
             <CardContent className="pb-6">
               {loadingData ? <Skeleton className="h-[200px] sm:h-[300px] w-full" /> : (
                 <div className="h-[200px] sm:h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={yearlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
                       <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} />
@@ -442,7 +442,7 @@ export default function Reports() {
             <CardContent className="pb-6">
               {loadingData ? <Skeleton className="h-[200px] sm:h-[300px] w-full" /> : (
                 <div className="h-[200px] sm:h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart data={yearlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
