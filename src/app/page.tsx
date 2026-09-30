@@ -1344,11 +1344,17 @@ export default function Dashboard() {
                             )}
                           </div>
                           
-                          {/* Desktop: dropdown menu */}
+                          {/* Dropdown menu (Desktop & Mobile) */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-7 w-7 sm:h-8 sm:w-8 rounded-full text-muted-foreground hover:text-foreground hidden sm:flex">
-                                <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()} 
+                                className="h-9 w-9 sm:h-8 sm:w-8 rounded-full text-muted-foreground hover:text-foreground flex shrink-0"
+                              >
+                                <MoreVertical className="h-5 w-5 sm:h-4 sm:w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="rounded-xl">
