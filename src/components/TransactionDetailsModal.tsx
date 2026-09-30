@@ -11,6 +11,8 @@ import type { Transaction, Account } from "@/types";
 import { isLendingTransaction, isForgivenLending } from "@/types";
 import { ArrowRightLeft, Users, HeartHandshake, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TransactionIcon } from "@/components/TransactionIcon";
+import { TransactionAmount } from "@/components/TransactionAmount";
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
@@ -41,25 +43,11 @@ export function TransactionDetailsModal({
       <DialogContent className="sm:max-w-[425px] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-3">
-            <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-sm ${
-                isTransfer
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
-                  : isLend
-                  ? "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400"
-                  : isIncome
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                  : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"
-              }`}
-            >
-              {isTransfer ? (
-                <ArrowRightLeft className="w-5 h-5" />
-              ) : isLend ? (
-                <Users className="w-5 h-5" />
-              ) : (
-                transaction.category.substring(0, 1)
-              )}
-            </div>
+            <TransactionIcon 
+              transaction={transaction} 
+              className="w-12 h-12 text-lg" 
+              iconClassName="w-5 h-5" 
+            />
             {isTransfer ? "โอนเงิน" : transaction.category}
           </DialogTitle>
         </DialogHeader>
@@ -69,23 +57,10 @@ export function TransactionDetailsModal({
             <span className="text-sm font-medium text-muted-foreground">
               จำนวนเงิน
             </span>
-            <span
-              className={`text-3xl font-bold tracking-tight ${
-                isTransfer
-                  ? "text-blue-600 dark:text-blue-500"
-                  : isLend
-                  ? "text-purple-600 dark:text-purple-400"
-                  : isIncome
-                  ? "text-emerald-600 dark:text-emerald-500"
-                  : "text-rose-600 dark:text-rose-500"
-              }`}
-            >
-              {isTransfer ? "" : isIncome ? "+" : "-"}฿
-              {transaction.amount.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
+            <TransactionAmount 
+              transaction={transaction} 
+              className="text-3xl"
+            />
             {isLend && (
               <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
                 {transaction.category === "ให้ยืม"

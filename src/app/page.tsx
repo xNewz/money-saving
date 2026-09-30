@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, PlusCircle, LogOut, TrendingUp, TrendingDown, Wallet, MoreVertical, Edit2, Trash2, Download, CreditCard, Filter, ArrowRightLeft, Target, Calculator, Menu, BarChart2, Sparkles, MonitorPlay, Users, Clock, Eye, EyeOff, History, HeartHandshake, UserCircle } from "lucide-react";
 import { TransactionModal } from "@/components/TransactionModal";
 import { TransactionDetailsModal } from "@/components/TransactionDetailsModal";
+import { TransactionIcon } from "@/components/TransactionIcon";
+import { TransactionAmount } from "@/components/TransactionAmount";
 import { AccountModal } from "@/components/AccountModal";
 import { BudgetModal } from "@/components/BudgetModal";
 import { LendingHistoryModal } from "@/components/LendingHistoryModal";
@@ -1258,18 +1260,11 @@ export default function Dashboard() {
                         {acc && <div className="absolute top-0 left-0 w-0.5 sm:w-1 h-full" style={{ backgroundColor: isTransfer ? '#3b82f6' : acc.color }} />}
                         
                         <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 pl-1 sm:pl-2">
-                          {/* Category Icon - smaller on mobile */}
-                          <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
-                            isTransfer 
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
-                              : isLendingTransaction(tx)
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400'
-                                : isIncome 
-                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
-                                  : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
-                          }`}>
-                            {isTransfer ? <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : isLendingTransaction(tx) ? <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : tx.category.substring(0, 1)}
-                          </div>
+                          <TransactionIcon 
+                            transaction={tx} 
+                            className="w-8 h-8 sm:w-10 sm:h-10 text-xs sm:text-sm" 
+                            iconClassName="w-3.5 h-3.5 sm:w-4 sm:h-4" 
+                          />
                           
                           <div className="flex flex-col min-w-0 flex-1">
                             <span className="font-semibold text-foreground tracking-tight truncate text-xs sm:text-sm">
@@ -1326,17 +1321,12 @@ export default function Dashboard() {
 
                         <div className="flex items-center gap-1 sm:gap-4 shrink-0">
                           <div className="flex flex-col items-end">
-                            <div className={`font-bold tracking-tight text-right text-xs sm:text-base ${
-                              isTransfer 
-                                ? 'text-blue-600 dark:text-blue-500' 
-                                : isLendingTransaction(tx)
-                                  ? 'text-purple-600 dark:text-purple-400'
-                                  : isIncome 
-                                    ? 'text-emerald-600 dark:text-emerald-500' 
-                                    : 'text-foreground'
-                            }`}>
-                              {isTransfer ? '' : isIncome ? '+' : '-'}฿{tx.amount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
-                            </div>
+                            <TransactionAmount 
+                              transaction={tx} 
+                              className="text-xs sm:text-base"
+                              minimumFractionDigits={0}
+                              maximumFractionDigits={0}
+                            />
                             {isLendingTransaction(tx) && (
                               <span className="text-[9px] sm:text-[10px] text-muted-foreground">
                                 {tx.category === 'ให้ยืม' ? 'ให้ยืม' : 'รับคืน'}
