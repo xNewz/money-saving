@@ -1092,7 +1092,7 @@ export default function Dashboard() {
                         <Skeleton className="h-[200px] w-[200px] mx-auto rounded-full" />
                       ) : pieChartData.length > 0 ? (
                         <div className="h-[220px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <PieChart>
                               <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={5} dataKey="value" stroke="none">
                                 {pieChartData.map((_entry, index) => (
@@ -1117,7 +1117,7 @@ export default function Dashboard() {
                         <Skeleton className="h-[200px] w-full" />
                       ) : filteredTransactions.length > 0 ? (
                         <div className="h-[220px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <BarChart data={dailyData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
                               <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} dy={5} />
@@ -1156,7 +1156,7 @@ export default function Dashboard() {
                   <Skeleton className="h-[250px] w-[250px] rounded-full" />
                 ) : pieChartData.length > 0 ? (
                   <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <PieChart>
                         <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={5} dataKey="value" stroke="none">
                           {pieChartData.map((_entry, index) => (
@@ -1189,7 +1189,7 @@ export default function Dashboard() {
                   <Skeleton className="h-[250px] w-full" />
                 ) : filteredTransactions.length > 0 ? (
                   <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <BarChart data={dailyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.2} />
                         <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} />
