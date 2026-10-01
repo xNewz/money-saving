@@ -38,6 +38,34 @@ import { Progress } from "@/components/ui/progress";
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658', '#ef5350'];
 
 type MobileChartTab = 'pie' | 'bar';
+type ViewMode = 'calendar' | 'cycle';
+
+function getCurrentCycleMonthYear(date: Date, paydayDate: number) {
+  const monthOffset = paydayDate > 15 ? -1 : 0;
+  const checkMonth = (y: number, m: number) => {
+    const start = new Date(y, m + monthOffset, paydayDate);
+    const end = new Date(y, m + monthOffset + 1, paydayDate - 1);
+    end.setHours(23, 59, 59, 999);
+    return date >= start && date <= end;
+  };
+
+  const y = date.getFullYear();
+  const m = date.getMonth();
+
+  if (checkMonth(y, m)) return { month: m, year: y };
+  
+  const prevDate = new Date(y, m - 1, 1);
+  if (checkMonth(prevDate.getFullYear(), prevDate.getMonth())) {
+    return { month: prevDate.getMonth(), year: prevDate.getFullYear() };
+  }
+
+  const nextDate = new Date(y, m + 1, 1);
+  if (checkMonth(nextDate.getFullYear(), nextDate.getMonth())) {
+    return { month: nextDate.getMonth(), year: nextDate.getFullYear() };
+  }
+
+  return { month: m, year: y }; 
+}
 
 export default function Dashboard() {
   const { user, logout, loading } = useAuth();
@@ -66,11 +94,14 @@ export default function Dashboard() {
   
   const [loadingTxs, setLoadingTxs] = useState(true);
   const [loadingAccs, setLoadingAccs] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [hasSetInitialCycle, setHasSetInitialCycle] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('cycle');
   
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [currentPage, setCurrentPage] = useState(1);
-  const [tableDateFilter, setTableDateFilter] = useState<number | 'all'>(new Date().getDate());
+  const [tableDateFilter, setTableDateFilter] = useState<string | 'all'>('all');
   const ITEMS_PER_PAGE = 10;
   const [hideBalance, setHideBalance] = useState<boolean>(false);
   const [mobileChartsOpen, setMobileChartsOpen] = useState(false);
@@ -81,6 +112,10 @@ export default function Dashboard() {
     if (saved) {
       setHideBalance(saved === 'true');
     }
+    const savedMode = localStorage.getItem('viewMode');
+    if (savedMode === 'calendar' || savedMode === 'cycle') {
+      setViewMode(savedMode as ViewMode);
+    }
   }, []);
 
   const toggleHideBalance = () => {
@@ -90,14 +125,24 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const today = new Date();
-    if (selectedMonth === today.getMonth() && selectedYear === today.getFullYear()) {
-      setTableDateFilter(today.getDate());
-    } else {
-      setTableDateFilter('all');
-    }
+    setTableDateFilter('all');
     setCurrentPage(1);
   }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    if (settingsLoaded && !hasSetInitialCycle) {
+      const today = new Date();
+      const savedMode = localStorage.getItem('viewMode') as ViewMode | null;
+      const initialMode = savedMode || 'cycle';
+      const payday = initialMode === 'calendar' ? 1 : (userSettings?.paydayDate || 1);
+      const cycle = getCurrentCycleMonthYear(today, payday);
+      if (selectedMonth !== cycle.month || selectedYear !== cycle.year) {
+        setSelectedMonth(cycle.month);
+        setSelectedYear(cycle.year);
+      }
+      setHasSetInitialCycle(true);
+    }
+  }, [settingsLoaded, userSettings, hasSetInitialCycle, selectedMonth, selectedYear]);
 
   useEffect(() => {
     if (!user) return;
@@ -159,6 +204,7 @@ export default function Dashboard() {
       } else {
         setUserSettings(null);
       }
+      setSettingsLoaded(true);
     });
 
     return () => {
@@ -229,7 +275,8 @@ export default function Dashboard() {
     processSubscriptions();
   }, [user]);
 
-  const paydayDate = userSettings?.paydayDate || 1;
+  const actualPayday = userSettings?.paydayDate || 1;
+  const paydayDate = viewMode === 'calendar' ? 1 : actualPayday;
   const monthOffset = paydayDate > 15 ? -1 : 0;
   const cycleStartDate = new Date(selectedYear, selectedMonth + monthOffset, paydayDate);
   const cycleEndDate = new Date(selectedYear, selectedMonth + monthOffset + 1, paydayDate - 1);
@@ -244,7 +291,7 @@ export default function Dashboard() {
 
   const transactionsForTable = tableDateFilter === 'all' 
     ? filteredTransactions 
-    : filteredTransactions.filter(t => new Date(t.date).getDate() === tableDateFilter);
+    : filteredTransactions.filter(t => format(new Date(t.date), 'yyyy-MM-dd') === tableDateFilter);
 
   const paginatedTransactions = transactionsForTable.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const totalPages = Math.ceil(transactionsForTable.length / ITEMS_PER_PAGE);
@@ -304,7 +351,7 @@ export default function Dashboard() {
   const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
     const d = new Date(cycleStartDate);
     d.setDate(d.getDate() + i);
-    return { day: d.getDate(), income: 0, expense: 0 };
+    return { day: d.getDate(), displayDate: formatThaiDate(d, 'd MMM'), income: 0, expense: 0 };
   });
 
   filteredTransactions.forEach(tx => {
@@ -807,10 +854,57 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
             
+            <div className="hidden sm:flex items-center text-xs font-medium text-muted-foreground ml-2 px-3 py-1.5 bg-muted/30 rounded-full border border-muted/50">
+              {viewMode === 'calendar' ? 'ปฏิทิน' : 'รอบบิล'}: {formatThaiDate(cycleStartDate, "d MMM")} - {formatThaiDate(cycleEndDate, "d MMM")}
+            </div>
+            
             <div className="flex-1" />
+
+            <div className="hidden sm:flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-muted/50">
+              <Button 
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={() => { setViewMode('calendar'); localStorage.setItem('viewMode', 'calendar'); }}
+                className={`h-7 px-3 text-xs rounded-md ${viewMode === 'calendar' ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                ปฏิทิน
+              </Button>
+              <Button 
+                variant={viewMode === 'cycle' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={() => { setViewMode('cycle'); localStorage.setItem('viewMode', 'cycle'); }}
+                className={`h-7 px-3 text-xs rounded-md ${viewMode === 'cycle' ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                รอบบิล
+              </Button>
+            </div>
+
             <Button onClick={handleExport} variant="ghost" size="icon" className="sm:hidden w-8 h-8 rounded-full text-muted-foreground hover:text-foreground shrink-0">
               <Download className="w-3.5 h-3.5" />
             </Button>
+          </div>
+          <div className="sm:hidden flex items-center justify-between px-1 mt-2">
+            <div className="text-[10px] font-medium text-muted-foreground">
+              *{viewMode === 'calendar' ? 'ปฏิทิน' : 'รอบบิล'}: {formatThaiDate(cycleStartDate, "d MMM")} - {formatThaiDate(cycleEndDate, "d MMM yyyy")}
+            </div>
+            <div className="flex items-center gap-1 bg-muted/30 p-0.5 rounded-lg border border-muted/50 shrink-0">
+              <Button 
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={() => { setViewMode('calendar'); localStorage.setItem('viewMode', 'calendar'); }}
+                className={`h-6 px-2 text-[10px] rounded-md ${viewMode === 'calendar' ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                ปฏิทิน
+              </Button>
+              <Button 
+                variant={viewMode === 'cycle' ? 'default' : 'ghost'} 
+                size="sm" 
+                onClick={() => { setViewMode('cycle'); localStorage.setItem('viewMode', 'cycle'); }}
+                className={`h-6 px-2 text-[10px] rounded-md ${viewMode === 'cycle' ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                รอบบิล
+              </Button>
+            </div>
           </div>
 
           {/* Summary Cards - 2x2 on mobile, 4-col on desktop */}
@@ -1124,7 +1218,12 @@ export default function Dashboard() {
                               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(val) => `฿${val}`} />
                               <Tooltip 
                                 formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
-                                labelFormatter={(label) => `วันที่ ${label}`}
+                                labelFormatter={(label, payload) => {
+                                  if (payload && payload.length > 0) {
+                                    return `วันที่ ${payload[0].payload.displayDate}`;
+                                  }
+                                  return `วันที่ ${label}`;
+                                }}
                                 contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '10px', border: '1px solid hsl(var(--border))', fontSize: '11px' }}
                               />
                               <Legend formatter={(value) => value === 'income' ? 'รายรับ' : 'รายจ่าย'} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '5px' }} />
@@ -1196,7 +1295,12 @@ export default function Dashboard() {
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(val) => `฿${val}`} />
                         <Tooltip 
                           formatter={(value: any, name: any) => [`฿${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2})}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']} 
-                          labelFormatter={(label) => `วันที่ ${label} ${MONTHS[selectedMonth]}`}
+                          labelFormatter={(label, payload) => {
+                            if (payload && payload.length > 0) {
+                              return `วันที่ ${payload[0].payload.displayDate}`;
+                            }
+                            return `วันที่ ${label}`;
+                          }}
                           contentStyle={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 500 }}
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                           cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
@@ -1222,17 +1326,21 @@ export default function Dashboard() {
           <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden">
             <CardHeader className="bg-muted/30 border-b border-muted/50 py-2.5 sm:py-3 px-3 sm:px-6 flex flex-row justify-between items-center space-y-0">
               <CardTitle className="text-sm sm:text-base font-semibold">ธุรกรรมล่าสุด</CardTitle>
-              <Select value={tableDateFilter.toString()} onValueChange={(val) => { setTableDateFilter(val === 'all' ? 'all' : parseInt(val)); setCurrentPage(1); }}>
+              <Select value={tableDateFilter} onValueChange={(val) => { setTableDateFilter(val); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[100px] sm:w-[125px] h-7 sm:h-8 text-[10px] sm:text-xs border border-muted/50 shadow-sm bg-background hover:bg-muted/50 rounded-full font-medium">
                   <SelectValue placeholder="วันที่" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl max-h-[200px]">
-                  <SelectItem value="all" className="rounded-lg text-xs">ทั้งหมด (เดือนนี้)</SelectItem>
-                  {Array.from({ length: daysInMonth }, (_, i) => (
-                    <SelectItem key={i + 1} value={(i + 1).toString()} className="rounded-lg text-xs">
-                      วันที่ {i + 1}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="all" className="rounded-lg text-xs">ทั้งหมด (รอบนี้)</SelectItem>
+                  {Array.from({ length: daysInMonth }, (_, i) => {
+                    const d = new Date(cycleStartDate);
+                    d.setDate(d.getDate() + i);
+                    return (
+                      <SelectItem key={i} value={format(d, 'yyyy-MM-dd')} className="rounded-lg text-xs">
+                        {formatThaiDate(d, 'd MMM')}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </CardHeader>
@@ -1385,7 +1493,7 @@ export default function Dashboard() {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-full flex items-center justify-center mb-3 sm:mb-4">
                     <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8 opacity-40" />
                   </div>
-                  <p className="mb-1 sm:mb-2 font-medium text-foreground text-sm sm:text-base">ไม่พบรายการใน{tableDateFilter === 'all' ? 'เดือนนี้' : `วันที่ ${tableDateFilter}`}</p>
+                  <p className="mb-1 sm:mb-2 font-medium text-foreground text-sm sm:text-base">ไม่พบรายการใน{tableDateFilter === 'all' ? 'รอบนี้' : `วันที่ ${formatThaiDate(new Date(tableDateFilter), 'd MMM')}`}</p>
                   <p className="text-xs sm:text-sm">เพิ่มรายการแรกเพื่อเริ่มติดตามการใช้จ่าย</p>
                   {accounts.length === 0 && (
                     <p className="text-xs sm:text-sm text-destructive mt-2">กรุณาสร้างบัญชีก่อนเพิ่มรายการ</p>
