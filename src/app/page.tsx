@@ -1432,8 +1432,8 @@ export default function Dashboard() {
                             <TransactionAmount 
                               transaction={tx} 
                               className="text-xs sm:text-base"
-                              minimumFractionDigits={0}
-                              maximumFractionDigits={0}
+                              minimumFractionDigits={2}
+                              maximumFractionDigits={2}
                             />
                             {isLendingTransaction(tx) && (
                               <span className="text-[9px] sm:text-[10px] text-muted-foreground">
