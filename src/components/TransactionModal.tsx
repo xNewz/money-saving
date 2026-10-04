@@ -91,7 +91,8 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   useEffect(() => {
     if (existingTransaction) {
       setType(existingTransaction.type);
-      setAmount(existingTransaction.amount.toString());
+      const roundedAmount = Math.round((Number(existingTransaction.amount || 0) + Number.EPSILON) * 100) / 100;
+      setAmount(roundedAmount.toString());
       setCategory(existingTransaction.category);
       setDate(format(new Date(existingTransaction.date), "yyyy-MM-dd'T'HH:mm"));
       setNote(existingTransaction.note || "");
@@ -144,7 +145,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
         userId: user.uid,
         accountId: accountId || null,
         toAccountId: type === "transfer" ? (toAccountId || null) : null,
-        amount: parseFloat(amount),
+        amount: Math.round(((parseFloat(amount) || 0) + Number.EPSILON) * 100) / 100,
         type,
         category: type === "transfer" ? "โอนเงิน" : category,
         date,

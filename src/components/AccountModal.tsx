@@ -50,7 +50,9 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
   useEffect(() => {
     if (existingAccount) {
       setName(existingAccount.name);
-      setBalanceInput(currentBalance !== undefined ? currentBalance.toString() : existingAccount.initialBalance.toString());
+      const rawBal = currentBalance !== undefined ? currentBalance : existingAccount.initialBalance;
+      const roundedBal = Math.round((Number(rawBal || 0) + Number.EPSILON) * 100) / 100;
+      setBalanceInput(roundedBal.toFixed(2));
       setColor(existingAccount.color);
       setBankSymbol(existingAccount.bankSymbol || "none");
     } else {
@@ -81,9 +83,11 @@ export const AccountModal: React.FC<Props> = ({ isOpen, onClose, existingAccount
       let finalInitialBalance = parseFloat(balanceInput) || 0;
       
       if (existingAccount && currentBalance !== undefined) {
-        const difference = finalInitialBalance - currentBalance;
+        const roundedCurrent = Math.round((Number(currentBalance || 0) + Number.EPSILON) * 100) / 100;
+        const difference = finalInitialBalance - roundedCurrent;
         finalInitialBalance = existingAccount.initialBalance + difference;
       }
+      finalInitialBalance = Math.round((finalInitialBalance + Number.EPSILON) * 100) / 100;
 
       const data = {
         userId: user.uid,
