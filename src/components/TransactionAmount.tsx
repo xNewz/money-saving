@@ -30,7 +30,7 @@ export function TransactionAmount({
     : "text-rose-600 dark:text-rose-500";
 
   const sign = showSign ? (isTransfer ? "" : isIncome ? "+" : "-") : "";
-  const formattedAmount = transaction.amount.toLocaleString(undefined, {
+  const formattedAmount = Number(transaction.amount || 0).toLocaleString(undefined, {
     minimumFractionDigits,
     maximumFractionDigits,
   });

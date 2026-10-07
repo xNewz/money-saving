@@ -308,7 +308,7 @@ export default function Dashboard() {
   const allTimeIncome = transactions.filter(t => t.type === "income").reduce((acc, t) => acc + t.amount, 0);
   const allTimeExpense = transactions.filter(t => t.type === "expense").reduce((acc, t) => acc + t.amount, 0);
   const totalInitialBalances = accounts.reduce((acc, a) => acc + a.initialBalance, 0);
-  const overallBalance = totalInitialBalances + allTimeIncome - allTimeExpense;
+  const overallBalance = Math.round((totalInitialBalances + allTimeIncome - allTimeExpense + Number.EPSILON) * 100) / 100;
 
   const totalOutstandingDebt = debts.reduce((sum, d) => {
     const paidTxs = transactions.filter(t => t.debtId === d.id && t.type === "expense");
@@ -571,7 +571,8 @@ export default function Dashboard() {
     const transfersOut = transactions.filter(t => t.type === 'transfer' && t.accountId === accountId).reduce((s, t) => s + t.amount, 0);
     const transfersIn = transactions.filter(t => t.type === 'transfer' && t.toAccountId === accountId).reduce((s, t) => s + t.amount, 0);
 
-    return acc.initialBalance + inc - exp - transfersOut + transfersIn;
+    const total = acc.initialBalance + inc - exp - transfersOut + transfersIn;
+    return Math.round((total + Number.EPSILON) * 100) / 100;
   };
 
   // Budget calculations
@@ -1432,8 +1433,8 @@ export default function Dashboard() {
                             <TransactionAmount 
                               transaction={tx} 
                               className="text-xs sm:text-base"
-                              minimumFractionDigits={0}
-                              maximumFractionDigits={0}
+                              minimumFractionDigits={2}
+                              maximumFractionDigits={2}
                             />
                             {isLendingTransaction(tx) && (
                               <span className="text-[9px] sm:text-[10px] text-muted-foreground">
