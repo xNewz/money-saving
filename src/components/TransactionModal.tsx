@@ -15,7 +15,8 @@ import { collection, addDoc, doc, updateDoc, query, where, onSnapshot } from "fi
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, Upload } from "lucide-react";
+import Tesseract from "tesseract.js";
 
 interface Props {
   isOpen: boolean;
@@ -39,6 +40,8 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   const [goals, setGoals] = useState<Goal[]>([]);
   const [outstandingLends, setOutstandingLends] = useState<{note: string, balance: number}[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isProcessingSlip, setIsProcessingSlip] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -116,6 +119,82 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
 
   const categories = type === "expense" ? Object.values(EXPENSE_CATEGORY_GROUPS).flat() : INCOME_CATEGORIES;
 
+  const handleSlipScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingSlip(true);
+    toast.info("กำลังอ่านสลิป... อาจใช้เวลาสักครู่");
+    try {
+      const { data: { text } } = await Tesseract.recognize(
+        file,
+        'tha+eng',
+        { logger: m => console.log(m) }
+      );
+      
+      console.log("OCR Result:", text);
+
+      const amountRegex = /(?:จำนวนเงิน|Amount|ยอดเงิน|โอนเงิน|Transfer|จํานวนเงิน)[:\s]*([0-9,]+(?:\.[0-9]{2})?)/i;
+      const amountMatch = text.match(amountRegex);
+      
+      let foundAmount = false;
+      if (amountMatch && amountMatch[1]) {
+        const parsedAmount = amountMatch[1].replace(/,/g, '');
+        if (!isNaN(parseFloat(parsedAmount))) {
+          setAmount(parsedAmount);
+          foundAmount = true;
+          toast.success(`ดึงยอดเงินสำเร็จ: ${parsedAmount} บาท`);
+        }
+      }
+      
+      if (!foundAmount) {
+         const genericAmountMatch = text.match(/([0-9,]+\.[0-9]{2})\s*(?:THB|บาท)/i);
+         if (genericAmountMatch && genericAmountMatch[1]) {
+            const parsedAmount = genericAmountMatch[1].replace(/,/g, '');
+            if (!isNaN(parseFloat(parsedAmount))) {
+              setAmount(parsedAmount);
+              foundAmount = true;
+              toast.success(`ดึงยอดเงินสำเร็จ: ${parsedAmount} บาท`);
+            }
+         }
+      }
+
+      const timeRegex = /([0-2][0-9]:[0-5][0-9])/;
+      const timeMatch = text.match(timeRegex);
+      const dateRegex = /([0-3]?[0-9])[\/\-]([0-1]?[0-9])[\/\-](25[0-9]{2}|20[0-9]{2}|[0-9]{2})/;
+      const dateMatch = text.match(dateRegex);
+
+      if (timeMatch && timeMatch[1]) {
+         const current = new Date(date);
+         
+         if (dateMatch) {
+            let day = parseInt(dateMatch[1], 10);
+            let month = parseInt(dateMatch[2], 10) - 1;
+            let year = parseInt(dateMatch[3], 10);
+            if (year < 100) year += 2000;
+            if (year > 2400) year -= 543;
+            current.setFullYear(year, month, day);
+         }
+         
+         const [hours, minutes] = timeMatch[1].split(':');
+         current.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+         setDate(format(current, "yyyy-MM-dd'T'HH:mm"));
+         toast.success("ดึงวันเวลาสำเร็จ");
+      }
+      
+      if (!foundAmount && !timeMatch) {
+         toast.warning("ไม่สามารถดึงข้อมูลยอดเงินหรือวันเวลาจากสลิปนี้ได้");
+      }
+
+    } catch (error) {
+      console.error(error);
+      toast.error("เกิดข้อผิดพลาดในการสแกนสลิป");
+    } finally {
+      setIsProcessingSlip(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !amount || !date) return;
@@ -179,6 +258,32 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
           <DialogTitle>{existingTransaction ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          {/* Slip Scan Section */}
+          <div className="flex flex-col gap-2 p-3 bg-secondary/30 rounded-lg border border-border/50">
+            <div className="flex justify-between items-center">
+              <div className="text-sm font-medium">สแกนข้อมูลจากสลิป (Auto-Fill)</div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessingSlip}
+                className="gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                {isProcessingSlip ? "กำลังประมวลผล..." : "อัปโหลดสลิป"}
+              </Button>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleSlipScan}
+              accept="image/*"
+              className="hidden"
+            />
+            <p className="text-xs text-muted-foreground">ระบบจะพยายามดึง ยอดเงิน และ วันเวลา ให้อัตโนมัติ</p>
+          </div>
+
           <div className="flex gap-2">
             <Button
               type="button"
