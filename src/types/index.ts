@@ -49,6 +49,7 @@ export interface Transaction {
   createdAt: number;
   isForgiven?: boolean;
   forgivenAt?: number;
+  repayDueDate?: string | null; // YYYY-MM-DD, วันนัดคืน (เฉพาะรายการ "ให้ยืม")
 }
 
 export interface Subscription {
@@ -88,6 +89,7 @@ export interface UserSettings {
   id: string;
   monthlyBudget: number;
   paydayDate?: number; // 1-31
+  lendReminderDays?: number; // เตือนทวงเมื่อค้างเกินกี่วัน (กรณีไม่ได้ตั้งวันนัดคืน)
 }
 
 import { bankLists } from "thai-banks-logo";

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, addDoc, updateDoc, getDocs } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, addDoc, updateDoc, getDocs, setDoc } from "firebase/firestore";
 import type { Transaction, Account, UserSettings, Debt, Subscription } from "@/types";
 import { EXPENSE_CATEGORY_GROUPS, EXTENDED_BANK_LISTS, isLendingExpense, isLendingIncome, isLendingTransaction } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { LendReminderBell, LendReminderBanner } from "@/components/LendReminders";
+import { computeLendReminders, describeReminder, DEFAULT_LEND_REMINDER_DAYS } from "@/lib/lendReminders";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658', '#ef5350'];
 
@@ -644,6 +646,22 @@ export default function Dashboard() {
     .filter(item => item.balance > 0)
     .sort((a, b) => b.balance - a.balance);
 
+  // Lend reminders (แจ้งเตือนทวงเงิน)
+  const lendReminderDays = userSettings?.lendReminderDays || DEFAULT_LEND_REMINDER_DAYS;
+  const lendReminders = computeLendReminders(transactions, lendReminderDays);
+  const reminderByNote = Object.fromEntries(lendReminders.map(r => [r.note, r]));
+
+  const handleChangeReminderDays = async (days: number) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, "settings", user.uid), { lendReminderDays: days, updatedAt: Date.now() }, { merge: true });
+      toast.success(`จะเตือนทวงเมื่อค้างเกิน ${days} วัน`);
+    } catch (error) {
+      console.error("Error saving reminder setting:", error);
+      toast.error("บันทึกการตั้งค่าไม่สำเร็จ");
+    }
+  };
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -676,6 +694,12 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={toggleHideBalance} className="rounded-full w-8 h-8 sm:w-9 sm:h-9">
               {hideBalance ? <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" /> : <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />}
             </Button>
+            <LendReminderBell
+              reminders={lendReminders}
+              reminderDays={lendReminderDays}
+              onChangeReminderDays={handleChangeReminderDays}
+              onOpenHistory={() => setIsLendingHistoryOpen(true)}
+            />
             <ModeToggle />
             
             <Button onClick={() => { setAccountToEdit(undefined); setIsAccountModalOpen(true); }} variant="secondary" className="hidden sm:flex gap-2 rounded-full shadow-sm hover:shadow transition-all">
@@ -762,6 +786,9 @@ export default function Dashboard() {
             <Plus className="w-6 h-6" />
           </button>
         </div>
+
+        {/* Lend reminder banner */}
+        <LendReminderBanner reminders={lendReminders} onOpenHistory={() => setIsLendingHistoryOpen(true)} />
 
         {/* My Accounts */}
         <section className="space-y-2">
@@ -1070,9 +1097,24 @@ export default function Dashboard() {
                     <div key={lend.note} className="flex justify-between items-center bg-background p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-muted/50 shadow-sm gap-2">
                       <div className="flex flex-col min-w-0 flex-1">
                         <span className="font-semibold text-xs sm:text-sm truncate">{lend.note}</span>
-                        <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 mt-0.5 min-w-0">
                           <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                           <span className="truncate">{formatThaiDate(lend.latestDate)}</span>
+                          {reminderByNote[lend.note] && (() => {
+                            const r = reminderByNote[lend.note];
+                            const cls = r.status === 'overdue'
+                              ? 'bg-destructive/10 text-destructive'
+                              : r.status === 'today'
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                : r.status === 'upcoming'
+                                  ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                                  : 'bg-muted text-muted-foreground';
+                            return (
+                              <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold whitespace-nowrap ${cls}`}>
+                                {r.status === 'scheduled' ? `นัด ${formatThaiDate(r.dueDate, 'd MMM')}` : describeReminder(r)}
+                              </span>
+                            );
+                          })()}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">

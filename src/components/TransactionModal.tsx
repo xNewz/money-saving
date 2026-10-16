@@ -13,9 +13,9 @@ import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORIES, type TransactionType, type 
 import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, updateDoc, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { toast } from "sonner";
-import { ArrowRightLeft, Upload } from "lucide-react";
+import { ArrowRightLeft, Upload, BellRing } from "lucide-react";
 import Tesseract from "tesseract.js";
 
 interface Props {
@@ -34,6 +34,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
   const [toAccountId, setToAccountId] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [note, setNote] = useState("");
+  const [repayDueDate, setRepayDueDate] = useState("");
   const [debtId, setDebtId] = useState("");
   const [debts, setDebts] = useState<Debt[]>([]);
   const [goalId, setGoalId] = useState("");
@@ -103,6 +104,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setToAccountId(existingTransaction.toAccountId || "");
       setDebtId(existingTransaction.debtId || "");
       setGoalId(existingTransaction.goalId || "");
+      setRepayDueDate(existingTransaction.repayDueDate || "");
     } else {
       setType("expense");
       setAmount("");
@@ -112,6 +114,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
       setToAccountId("");
       setDebtId("");
       setGoalId("");
+      setRepayDueDate("");
       if (accounts.length > 0 && !accountId) {
         setAccountId(accounts[0].id);
       }
@@ -231,6 +234,7 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
         note,
         debtId: EXPENSE_CATEGORY_GROUPS["เงินผ่อนหนี้"].includes(category) && debtId ? debtId : null,
         goalId: category === "เงินออม" && goalId ? goalId : null,
+        repayDueDate: type === "expense" && category === "ให้ยืม" && repayDueDate ? repayDueDate : null,
       };
 
       if (existingTransaction) {
@@ -474,6 +478,47 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
               required
             />
           </div>
+
+          {type === "expense" && category === "ให้ยืม" && (
+            <div className="space-y-2 p-3 bg-violet-500/5 border border-violet-500/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label className="text-violet-600 dark:text-violet-400 font-medium flex items-center gap-1.5">
+                  <BellRing className="w-3.5 h-3.5" /> วันนัดคืน (ไม่บังคับ)
+                </Label>
+                {repayDueDate && (
+                  <button type="button" onClick={() => setRepayDueDate("")} className="text-[11px] text-muted-foreground hover:text-foreground">
+                    ล้าง
+                  </button>
+                )}
+              </div>
+              <Input
+                type="date"
+                className="bg-background"
+                value={repayDueDate}
+                min={date ? date.slice(0, 10) : undefined}
+                onChange={(e) => setRepayDueDate(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "1 สัปดาห์", days: 7 },
+                  { label: "2 สัปดาห์", days: 14 },
+                  { label: "1 เดือน", days: 30 },
+                ].map(({ label, days }) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setRepayDueDate(format(addDays(date ? new Date(date) : new Date(), days), "yyyy-MM-dd"))}
+                    className="text-[11px] px-2.5 py-1 rounded-full border border-violet-500/30 text-violet-600 dark:text-violet-300 hover:bg-violet-500/10 transition-colors"
+                  >
+                    +{label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                ระบบจะแจ้งเตือนที่กระดิ่งและหน้าหลักเมื่อใกล้/ถึงกำหนด ถ้าไม่ตั้งจะเตือนตามจำนวนวันที่ตั้งไว้
+              </p>
+            </div>
+          )}
 
           {type === "income" && category === "ได้รับคืน" && outstandingLends.length > 0 ? (
             <div className="space-y-2 p-3 bg-violet-500/5 border border-violet-500/20 rounded-lg">
