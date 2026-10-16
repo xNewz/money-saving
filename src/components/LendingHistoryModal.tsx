@@ -97,7 +97,11 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
 
     return Object.values(map)
       .map((item) => {
-        const balance = Math.max(0, item.totalLent - item.totalReceived - item.totalForgiven);
+        const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+        const net = round2(item.totalLent - item.totalReceived - item.totalForgiven);
+        const balance = Math.max(0, net);
+        // ได้รับคืนเกินกว่าที่ให้ยืม (มักเกิดจากชื่อในบันทึกช่วยจำไม่ตรงกัน)
+        const overpaid = Math.max(0, -net);
         const resolvedAmount = item.totalReceived + item.totalForgiven;
         const percentRepaid = item.totalLent > 0
           ? Math.min(100, Math.round((resolvedAmount / item.totalLent) * 100))
@@ -108,6 +112,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
         return {
           ...item,
           balance,
+          overpaid,
           percentRepaid,
           isSettled,
           isFullyForgiven,
@@ -136,7 +141,8 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
       totalLent: lent,
       totalReceived: received,
       totalForgiven: forgiven,
-      outstanding: Math.max(0, lent - received - forgiven),
+      // รวมยอดค้างรายคน ไม่ใช่ lent - received รวม เพราะยอดที่รับเกินของคนหนึ่งไม่ควรไปหักหนี้ของอีกคน
+      outstanding: Math.round((peopleSummary.reduce((s, p) => s + p.balance, 0) + Number.EPSILON) * 100) / 100,
       activeCount: peopleSummary.filter((p) => !p.isSettled).length,
       settledCount: peopleSummary.filter((p) => p.isSettled).length,
     };
@@ -367,6 +373,14 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                               <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
                                 <CheckCircle2 className="w-3 h-3" />
                                 <span>คืน + ยกหนี้ครบ</span>
+                              </span>
+                            ) : person.overpaid > 0 ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold border border-sky-500/20"
+                                title="ยอดได้รับคืนมากกว่าที่ให้ยืม — ตรวจสอบว่าชื่อในบันทึกช่วยจำตรงกับรายการให้ยืมหรือไม่"
+                              >
+                                <AlertCircle className="w-3 h-3" />
+                                <span>รับเกิน ฿{person.overpaid.toLocaleString()}</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
