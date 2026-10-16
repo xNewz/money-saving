@@ -102,6 +102,7 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [currentPage, setCurrentPage] = useState(1);
   const [tableDateFilter, setTableDateFilter] = useState<string | 'all'>('all');
+  const [tableAccountFilter, setTableAccountFilter] = useState<string | 'all'>('all');
   const ITEMS_PER_PAGE = 10;
   const [hideBalance, setHideBalance] = useState<boolean>(false);
   const [mobileChartsOpen, setMobileChartsOpen] = useState(false);
@@ -289,9 +290,11 @@ export default function Dashboard() {
 
   const daysInMonth = Math.round((cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const transactionsForTable = tableDateFilter === 'all' 
-    ? filteredTransactions 
-    : filteredTransactions.filter(t => format(new Date(t.date), 'yyyy-MM-dd') === tableDateFilter);
+  const transactionsForTable = filteredTransactions.filter(t => {
+    if (tableDateFilter !== 'all' && format(new Date(t.date), 'yyyy-MM-dd') !== tableDateFilter) return false;
+    if (tableAccountFilter !== 'all' && t.accountId !== tableAccountFilter && t.toAccountId !== tableAccountFilter) return false;
+    return true;
+  });
 
   const paginatedTransactions = transactionsForTable.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const totalPages = Math.ceil(transactionsForTable.length / ITEMS_PER_PAGE);
@@ -1327,6 +1330,27 @@ export default function Dashboard() {
           <Card className="rounded-xl sm:rounded-2xl shadow-sm border-muted/50 overflow-hidden">
             <CardHeader className="bg-muted/30 border-b border-muted/50 py-2.5 sm:py-3 px-3 sm:px-6 flex flex-row justify-between items-center space-y-0">
               <CardTitle className="text-sm sm:text-base font-semibold">ธุรกรรมล่าสุด</CardTitle>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+              <Select value={tableAccountFilter} onValueChange={(val) => { setTableAccountFilter(val); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[100px] sm:w-[140px] h-7 sm:h-8 text-[10px] sm:text-xs border border-muted/50 shadow-sm bg-background hover:bg-muted/50 rounded-full font-medium">
+                  <SelectValue placeholder="บัญชี" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl max-h-[250px]">
+                  <SelectItem value="all" className="rounded-lg text-xs">ทุกบัญชี</SelectItem>
+                  {accounts.map(acc => (
+                    <SelectItem key={acc.id} value={acc.id} className="rounded-lg text-xs">
+                      <div className="flex items-center gap-1.5">
+                        {acc.bankSymbol && EXTENDED_BANK_LISTS[acc.bankSymbol] ? (
+                          <img src={EXTENDED_BANK_LISTS[acc.bankSymbol].icon} alt={EXTENDED_BANK_LISTS[acc.bankSymbol].name} className="w-3.5 h-3.5 rounded-sm" />
+                        ) : (
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
+                        )}
+                        <span className="truncate max-w-[90px]">{acc.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={tableDateFilter} onValueChange={(val) => { setTableDateFilter(val); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[100px] sm:w-[125px] h-7 sm:h-8 text-[10px] sm:text-xs border border-muted/50 shadow-sm bg-background hover:bg-muted/50 rounded-full font-medium">
                   <SelectValue placeholder="วันที่" />
@@ -1344,6 +1368,7 @@ export default function Dashboard() {
                   })}
                 </SelectContent>
               </Select>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {loadingTxs ? (
@@ -1352,7 +1377,7 @@ export default function Dashboard() {
                     <Skeleton key={i} className="h-14 sm:h-16 w-full rounded-lg sm:rounded-xl" />
                   ))}
                 </div>
-              ) : filteredTransactions.length > 0 ? (
+              ) : transactionsForTable.length > 0 ? (
                 <div className="divide-y divide-muted/50">
                   {paginatedTransactions.map((tx) => {
                     const acc = accounts.find(a => a.id === tx.accountId);
@@ -1494,7 +1519,7 @@ export default function Dashboard() {
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-full flex items-center justify-center mb-3 sm:mb-4">
                     <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8 opacity-40" />
                   </div>
-                  <p className="mb-1 sm:mb-2 font-medium text-foreground text-sm sm:text-base">ไม่พบรายการใน{tableDateFilter === 'all' ? 'รอบนี้' : `วันที่ ${formatThaiDate(new Date(tableDateFilter), 'd MMM')}`}</p>
+                  <p className="mb-1 sm:mb-2 font-medium text-foreground text-sm sm:text-base">ไม่พบรายการใน{tableDateFilter === 'all' ? 'รอบนี้' : `วันที่ ${formatThaiDate(new Date(tableDateFilter), 'd MMM')}`}{tableAccountFilter !== 'all' && ` (บัญชี ${accounts.find(a => a.id === tableAccountFilter)?.name ?? ''})`}</p>
                   <p className="text-xs sm:text-sm">เพิ่มรายการแรกเพื่อเริ่มติดตามการใช้จ่าย</p>
                   {accounts.length === 0 && (
                     <p className="text-xs sm:text-sm text-destructive mt-2">กรุณาสร้างบัญชีก่อนเพิ่มรายการ</p>
