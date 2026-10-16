@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { LendReminderBell, LendReminderBanner } from "@/components/LendReminders";
 import { computeLendReminders, describeReminder, DEFAULT_LEND_REMINDER_DAYS } from "@/lib/lendReminders";
+import { getLendingIncomeExcessMap } from "@/lib/lendingIncome";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658', '#ef5350'];
 
@@ -301,10 +302,20 @@ export default function Dashboard() {
   const paginatedTransactions = transactionsForTable.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const totalPages = Math.ceil(transactionsForTable.length / ITEMS_PER_PAGE);
 
-  // Exclude lending / payback from budget and income/expense totals
+  // Calculate excess from lending payback transactions that exceed debt
+  const lendingExcessMap = React.useMemo(() => {
+    return getLendingIncomeExcessMap(transactions);
+  }, [transactions]);
+
+  // Exclude lending / payback from budget and income/expense totals,
+  // except any payback excess that exceeds the debt amount (counted as income)
   const totalIncome = filteredTransactions
-    .filter((t) => t.type === "income" && !isLendingIncome(t))
-    .reduce((acc, t) => acc + t.amount, 0);
+    .reduce((acc, t) => {
+      if (t.type !== "income") return acc;
+      if (!isLendingIncome(t)) return acc + t.amount;
+      const excess = lendingExcessMap.get(t.id) || 0;
+      return acc + excess;
+    }, 0);
 
   const totalExpense = filteredTransactions
     .filter((t) => t.type === "expense" && !isLendingExpense(t))
@@ -360,13 +371,20 @@ export default function Dashboard() {
   });
 
   filteredTransactions.forEach(tx => {
-    if (tx.type === "transfer" || isLendingTransaction(tx)) return; // Ignore transfers and lending in charts
+    if (tx.type === "transfer") return; // Ignore transfers in charts
     const d = new Date(tx.date);
     const dayIndex = Math.floor((d.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
     if (dayIndex >= 0 && dayIndex < daysInMonth) {
       if (tx.type === "income") {
-        dailyData[dayIndex].income += tx.amount;
-      } else {
+        if (!isLendingIncome(tx)) {
+          dailyData[dayIndex].income += tx.amount;
+        } else {
+          const excess = lendingExcessMap.get(tx.id) || 0;
+          if (excess > 0) {
+            dailyData[dayIndex].income += excess;
+          }
+        }
+      } else if (!isLendingExpense(tx)) {
         dailyData[dayIndex].expense += tx.amount;
       }
     }

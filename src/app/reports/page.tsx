@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import type { Transaction, Account } from "@/types";
 import { EXPENSE_CATEGORY_GROUPS, isLendingExpense, isLendingIncome, isLendingTransaction } from "@/types";
+import { getLendingIncomeExcessMap } from "@/lib/lendingIncome";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, TrendingUp, TrendingDown, Wallet, Calendar, PieChart as PieChartIcon, Target, Users, Clock } from "lucide-react";
@@ -73,6 +74,8 @@ export default function Reports() {
   }, [user]);
 
   // Aggregate Data
+  const lendingExcessMap = useMemo(() => getLendingIncomeExcessMap(transactions), [transactions]);
+
   const { yearlyData, topExpenses, totalYearIncome, totalYearExpense, groupMap, sortedIncomeCategories, sortedExpenseCategories } = useMemo(() => {
     const data = Array.from({ length: 12 }, (_, i) => ({
       month: MONTHS[i],
@@ -106,11 +109,15 @@ export default function Reports() {
         ? date.getFullYear() === selectedYear 
         : date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
 
-      if (isMatch && tx.type !== "transfer" && !isLendingTransaction(tx)) {
+      if (isMatch && tx.type !== "transfer") {
         if (tx.type === "income") {
-          periodIncome += tx.amount;
-          incomeCategoryMap[tx.category] = (incomeCategoryMap[tx.category] || 0) + tx.amount;
-        } else if (tx.type === "expense") {
+          const excess = isLendingIncome(tx) ? (lendingExcessMap.get(tx.id) || 0) : tx.amount;
+          if (excess > 0) {
+            periodIncome += excess;
+            const catName = isLendingIncome(tx) ? "ได้รับคืน (ส่วนเกินหนี้)" : tx.category;
+            incomeCategoryMap[catName] = (incomeCategoryMap[catName] || 0) + excess;
+          }
+        } else if (tx.type === "expense" && !isLendingExpense(tx)) {
           periodExpense += tx.amount;
           expenseCategoryMap[tx.category] = (expenseCategoryMap[tx.category] || 0) + tx.amount;
           
@@ -119,10 +126,14 @@ export default function Reports() {
         }
       }
 
-      if (date.getFullYear() === selectedYear && tx.type !== "transfer" && !isLendingTransaction(tx)) {
+      if (date.getFullYear() === selectedYear && tx.type !== "transfer") {
         const m = date.getMonth();
-        if (tx.type === "income") data[m].income += tx.amount;
-        if (tx.type === "expense") data[m].expense += tx.amount;
+        if (tx.type === "income") {
+          const excess = isLendingIncome(tx) ? (lendingExcessMap.get(tx.id) || 0) : tx.amount;
+          if (excess > 0) data[m].income += excess;
+        } else if (tx.type === "expense" && !isLendingExpense(tx)) {
+          data[m].expense += tx.amount;
+        }
       }
     });
 
@@ -148,7 +159,7 @@ export default function Reports() {
       sortedIncomeCategories,
       sortedExpenseCategories
     };
-  }, [transactions, selectedYear, selectedMonth, viewMode]);
+  }, [transactions, selectedYear, selectedMonth, viewMode, lendingExcessMap]);
 
   const outstandingLends = useMemo(() => {
     const lentOutBalances: Record<string, { totalLent: number, totalReceived: number, balance: number, latestDate: string }> = {};

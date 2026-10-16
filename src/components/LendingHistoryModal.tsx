@@ -24,6 +24,7 @@ import {
   History,
   HeartHandshake,
   Undo2,
+  TrendingUp,
 } from "lucide-react";
 
 interface LendingHistoryModalProps {
@@ -132,15 +133,18 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
     let lent = 0;
     let received = 0;
     let forgiven = 0;
+    let totalOverpaid = 0;
     peopleSummary.forEach((p) => {
       lent += p.totalLent;
       received += p.totalReceived;
       forgiven += p.totalForgiven;
+      totalOverpaid += p.overpaid;
     });
     return {
-      totalLent: lent,
-      totalReceived: received,
-      totalForgiven: forgiven,
+      totalLent: Math.round((lent + Number.EPSILON) * 100) / 100,
+      totalReceived: Math.round((received + Number.EPSILON) * 100) / 100,
+      totalForgiven: Math.round((forgiven + Number.EPSILON) * 100) / 100,
+      totalOverpaid: Math.round((totalOverpaid + Number.EPSILON) * 100) / 100,
       // รวมยอดค้างรายคน ไม่ใช่ lent - received รวม เพราะยอดที่รับเกินของคนหนึ่งไม่ควรไปหักหนี้ของอีกคน
       outstanding: Math.round((peopleSummary.reduce((s, p) => s + p.balance, 0) + Number.EPSILON) * 100) / 100,
       activeCount: peopleSummary.filter((p) => !p.isSettled).length,
@@ -181,13 +185,13 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
           </div>
 
           {/* Metric Cards Summary - Mobile Optimized */}
-          <div className={`grid ${totals.totalForgiven > 0 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"} gap-2 mt-3 sm:mt-4`}>
+          <div className={`grid ${totals.totalForgiven > 0 && totals.totalOverpaid > 0 ? "grid-cols-2 sm:grid-cols-5" : totals.totalForgiven > 0 || totals.totalOverpaid > 0 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"} gap-2 mt-3 sm:mt-4`}>
             <div className="bg-purple-500/10 border border-purple-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
               <span className="text-[10px] sm:text-xs font-medium text-purple-700 dark:text-purple-300 truncate">
                 ให้ยืมสะสม
               </span>
               <p className="text-xs sm:text-base font-bold text-purple-700 dark:text-purple-300 mt-1 truncate">
-                ฿{totals.totalLent.toLocaleString()}
+                ฿{totals.totalLent.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </p>
             </div>
             <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
@@ -195,7 +199,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                 ได้รับคืนแล้ว
               </span>
               <p className="text-xs sm:text-base font-bold text-emerald-700 dark:text-emerald-300 mt-1 truncate">
-                ฿{totals.totalReceived.toLocaleString()}
+                ฿{totals.totalReceived.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </p>
             </div>
             {totals.totalForgiven > 0 && (
@@ -205,7 +209,18 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                   ยกหนี้ให้แล้ว
                 </span>
                 <p className="text-xs sm:text-base font-bold text-rose-700 dark:text-rose-300 mt-1 truncate">
-                  ฿{totals.totalForgiven.toLocaleString()}
+                  ฿{totals.totalForgiven.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+            )}
+            {totals.totalOverpaid > 0 && (
+              <div className="bg-teal-500/10 border border-teal-500/20 p-2 sm:p-2.5 rounded-xl flex flex-col justify-between">
+                <span className="text-[10px] sm:text-xs font-medium text-teal-700 dark:text-teal-300 truncate flex items-center gap-1" title="ส่วนต่างที่ได้รับคืนเกินกว่ายอดหนี้ นับเป็นรายรับให้อัตโนมัติ">
+                  <TrendingUp className="w-3 h-3" />
+                  ส่วนเกินเป็นรายรับ
+                </span>
+                <p className="text-xs sm:text-base font-bold text-teal-700 dark:text-teal-300 mt-1 truncate">
+                  +฿{totals.totalOverpaid.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                 </p>
               </div>
             )}
@@ -214,7 +229,7 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                 คงค้างปัจจุบัน
               </span>
               <p className="text-xs sm:text-base font-bold text-amber-700 dark:text-amber-300 mt-1 truncate">
-                ฿{totals.outstanding.toLocaleString()}
+                ฿{totals.outstanding.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </p>
             </div>
           </div>
@@ -376,11 +391,11 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                               </span>
                             ) : person.overpaid > 0 ? (
                               <span
-                                className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold border border-sky-500/20"
-                                title="ยอดได้รับคืนมากกว่าที่ให้ยืม — ตรวจสอบว่าชื่อในบันทึกช่วยจำตรงกับรายการให้ยืมหรือไม่"
+                                className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-300 font-semibold border border-teal-500/20"
+                                title={`คืนครบแล้ว และยอดส่วนเกิน ฿${person.overpaid.toLocaleString()} นับเป็นรายรับให้อัตโนมัติ`}
                               >
-                                <AlertCircle className="w-3 h-3" />
-                                <span>รับเกิน ฿{person.overpaid.toLocaleString()}</span>
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>คืนครบ (+รายรับ ฿{person.overpaid.toLocaleString()})</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
@@ -418,6 +433,11 @@ export const LendingHistoryModal: React.FC<LendingHistoryModalProps> = ({
                           <div className="flex items-center gap-2 flex-wrap">
                             <span>
                               คืนแล้ว <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">฿{person.totalReceived.toLocaleString()}</strong>
+                              {person.overpaid > 0 && (
+                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-medium ml-1">
+                                  (ส่วนเกิน ฿{person.overpaid.toLocaleString()} นับเป็นรายรับ)
+                                </span>
+                              )}
                             </span>
                             {person.totalForgiven > 0 && (
                               <span>

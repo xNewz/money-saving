@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { isLendingExpense, isLendingIncome } from '@/types';
+import { getLendingIncomeExcessMap } from '@/lib/lendingIncome';
 
 export async function GET(
   request: Request,
@@ -51,8 +52,15 @@ export async function GET(
       return d >= cycleStartDate && d <= cycleEndDate;
     });
 
-    const totalIncome = currentCycleTxs.filter((t: any) => t.type === 'income' && !isLendingIncome(t)).reduce((sum, t: any) => sum + t.amount, 0);
-    const totalExpense = currentCycleTxs.filter((t: any) => t.type === 'expense' && !isLendingExpense(t)).reduce((sum, t: any) => sum + t.amount, 0);
+    const lendingExcessMap = getLendingIncomeExcessMap(transactions as any);
+
+    const totalIncome = currentCycleTxs.reduce((sum: number, t: any) => {
+      if (t.type !== 'income') return sum;
+      if (!isLendingIncome(t)) return sum + t.amount;
+      const excess = lendingExcessMap.get(t.id) || 0;
+      return sum + excess;
+    }, 0);
+    const totalExpense = currentCycleTxs.filter((t: any) => t.type === 'expense' && !isLendingExpense(t)).reduce((sum: number, t: any) => sum + t.amount, 0);
 
     const budget = settings?.monthlyBudget || 0;
     const daysInMonth = Math.round((cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
