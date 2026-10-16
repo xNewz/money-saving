@@ -258,11 +258,13 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{existingTransaction ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"}</DialogTitle>
+      <DialogContent className="w-[95vw] sm:max-w-[440px] max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl border bg-background shadow-xl">
+        <DialogHeader className="p-4 sm:p-5 pb-3 border-b shrink-0 bg-muted/20">
+          <DialogTitle className="text-base sm:text-lg font-bold">
+            {existingTransaction ? "แก้ไขรายการ" : "เพิ่มรายการใหม่"}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {/* Slip Scan Section */}
           <div className="flex flex-col gap-2 p-3 bg-secondary/30 rounded-lg border border-border/50">
             <div className="flex justify-between items-center">
@@ -567,10 +569,14 @@ export const TransactionModal: React.FC<Props> = ({ isOpen, onClose, existingTra
           )}
 
           <div className="pt-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">
               ยกเลิก
             </Button>
-            <Button type="submit" disabled={loading || !amount || (type !== 'transfer' && !category) || (type === 'transfer' && !toAccountId)}>
+            <Button 
+              type="submit" 
+              disabled={loading || !amount || (type !== 'transfer' && !category) || (type === 'transfer' && !toAccountId)}
+              className="rounded-xl px-5"
+            >
               {loading ? "กำลังบันทึก..." : "บันทึก"}
             </Button>
           </div>

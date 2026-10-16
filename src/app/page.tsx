@@ -110,6 +110,15 @@ export default function Dashboard() {
   const [hideBalance, setHideBalance] = useState<boolean>(false);
   const [mobileChartsOpen, setMobileChartsOpen] = useState(false);
   const [mobileChartTab, setMobileChartTab] = useState<MobileChartTab>('pie');
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('hideBalance');
@@ -1213,8 +1222,9 @@ export default function Dashboard() {
         {/* Charts Section - Collapsible on mobile, side-by-side on desktop */}
         <section>
           {/* Mobile: Collapsible chart with tabs */}
-          <div className="lg:hidden">
-            <Card className="rounded-xl shadow-sm border-muted/50 overflow-hidden">
+          {isDesktop === false && (
+            <div>
+              <Card className="rounded-xl shadow-sm border-muted/50 overflow-hidden">
               <button
                 onClick={() => setMobileChartsOpen(!mobileChartsOpen)}
                 className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
@@ -1307,10 +1317,12 @@ export default function Dashboard() {
               )}
             </Card>
           </div>
+          )}
 
           {/* Desktop: Side-by-side charts */}
-          <div className="hidden lg:grid grid-cols-2 gap-6">
-            <Card className="rounded-2xl shadow-sm border-muted/50">
+          {isDesktop === true && (
+            <div className="grid grid-cols-2 gap-6">
+              <Card className="rounded-2xl shadow-sm border-muted/50">
               <CardHeader>
                 <CardTitle className="text-base font-semibold">รายจ่ายแบ่งตามหมวดหมู่</CardTitle>
               </CardHeader>
@@ -1383,6 +1395,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+          )}
         </section>
 
         {/* Transactions List */}

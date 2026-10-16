@@ -98,7 +98,7 @@ export const GoalModal: React.FC<Props> = ({ isOpen, onClose, existingGoal }) =>
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{existingGoal ? "แก้ไขเป้าหมาย" : "เพิ่มเป้าหมายการออม"}</DialogTitle>
         </DialogHeader>

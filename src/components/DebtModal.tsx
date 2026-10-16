@@ -91,7 +91,7 @@ export const DebtModal: React.FC<Props> = ({ isOpen, onClose, existingDebt }) =>
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{existingDebt ? "แก้ไขข้อมูลหนี้สิน" : "เพิ่มหนี้สินก้อนใหม่"}</DialogTitle>
         </DialogHeader>
