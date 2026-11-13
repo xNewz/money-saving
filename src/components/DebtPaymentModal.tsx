@@ -28,7 +28,7 @@ export const DebtPaymentModal: React.FC<Props> = ({ isOpen, onClose, debt }) => 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +49,7 @@ export const DebtPaymentModal: React.FC<Props> = ({ isOpen, onClose, debt }) => 
   useEffect(() => {
     if (isOpen) {
       setAmount("");
-      setDate(format(new Date(), "yyyy-MM-dd"));
+      setDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
       setNote("");
     }
   }, [isOpen]);
@@ -141,9 +141,9 @@ export const DebtPaymentModal: React.FC<Props> = ({ isOpen, onClose, debt }) => 
           )}
 
           <div className="space-y-2">
-            <Label>วันที่</Label>
+            <Label>วันที่และเวลา</Label>
             <Input
-              type="date"
+              type="datetime-local"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
